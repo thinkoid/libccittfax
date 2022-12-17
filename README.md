@@ -20,8 +20,8 @@ CCITTFAX recommendations deal with both encoding and with the embedding of image
 
 PDF specification is a bit different. It takes the standard and trims it to accommodate the PDF paradigms. Because PDF is a byte stream and not a bit stream it mandates:
 
-* unencoded data is treated as a collection of scanlines, each ending on a byte boundary, with padding bits, if necessary,
-* encoded data is treated as a continuous bit stream with an option to add padding bits to each scanline, if necessary.
+* unencoded data is treated as a collection of scanlines, each ending on a byte boundary (padding, if necessary),
+* encoded data is treated as a continuous bit stream with an option to add padding bits to each scanline.
 
 Also, end of data (EOD) skips to the next byte boundary.
 
