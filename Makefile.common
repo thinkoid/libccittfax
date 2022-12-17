@@ -1,2 +1,8 @@
 # -*- mode: makefile; -*-
 
+AM_CPPFLAGS = -I. -I$(top_srcdir)/include
+
+# AM_CFLAGS  =
+# AM_LDFLAGS =
+
+# LIBS =
