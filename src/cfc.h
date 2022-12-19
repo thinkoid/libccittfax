@@ -5,6 +5,8 @@
 
 #include <ccittfax/defs.h>
 
+#include <stddef.h>
+
 struct cfc_buffer_t
 {
         char *buf;
