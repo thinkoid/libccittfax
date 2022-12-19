@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "cf.h"
+#include "cfc.h"
 
 size_t
 new_capacity(size_t cap, size_t size, size_t add)
@@ -29,8 +29,8 @@ new_capacity(size_t cap, size_t size, size_t add)
         return cap;
 }
 
-struct cf_buffer_t *
-reserve_buffer(struct cf_buffer_t *dst)
+struct cfc_buffer_t *
+reserve_buffer(struct cfc_buffer_t *dst)
 {
         char *buf;
         size_t cap, written;

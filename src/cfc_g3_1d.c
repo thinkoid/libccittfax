@@ -5,9 +5,10 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "cf.h"
-#include "cf_utils.h"
+#include "cfc.h"
 #include "cfc_tables.h"
+
+#include "cf_utils.h"
 
 #define CF_LITTLE_ENDIAN (*(unsigned char *)(&(int){ 1 }))
 
@@ -20,7 +21,7 @@
 #define CF_TO_BE(x)  CF_LITTLE_ENDIAN ? CF_DO_TO_BE(x) : (x)
 
 static int
-put_rle_explicit(struct cf_buffer_t *dst, unsigned value, unsigned len)
+put_rle_explicit(struct cfc_buffer_t *dst, unsigned value, unsigned len)
 {
         const char *p;
         size_t i, n, written;
@@ -46,19 +47,19 @@ put_rle_explicit(struct cf_buffer_t *dst, unsigned value, unsigned len)
 }
 
 static inline int
-put_code(struct cf_buffer_t *dst, const struct cfc_code_t *code)
+put_code(struct cfc_buffer_t *dst, const struct cfc_code_t *code)
 {
         return put_rle_explicit(dst, code->value, code->len);
 }
 
 static inline int
-put_eol(struct cf_buffer_t *dst)
+put_eol(struct cfc_buffer_t *dst)
 {
         return put_code(dst, &cfc_eol);
 }
 
 static int
-put_rle(struct cf_buffer_t *dst, int rle, int color)
+put_rle(struct cfc_buffer_t *dst, int rle, int color)
 {
         int m, n;
         const struct cfc_code_t *term_table, *mkup_table;
@@ -100,10 +101,10 @@ get_rle(const char *arr, size_t pos, size_t end, int color)
         return i - pos;
 }
 
-static struct cf_buffer_t *
+static struct cfc_buffer_t *
 make_cfc_buffer()
 {
-        struct cf_buffer_t *dst;
+        struct cfc_buffer_t *dst;
 
         dst = calloc(1, sizeof *dst);
         if (0 == dst)
@@ -118,12 +119,12 @@ make_cfc_buffer()
         return dst;
 }
 
-struct cf_buffer_t *
+struct cfc_buffer_t *
 cfc_g3_1d(const char *src, struct cf_params_t *params)
 {
         int i, pos, stride, rle, color;
 
-        struct cf_buffer_t *dst;
+        struct cfc_buffer_t *dst;
 
         assert(params->rows);
         assert(params->columns);

@@ -5,7 +5,15 @@
 
 #include <ccittfax/defs.h>
 
-struct cf_buffer_t *
-cfc(const char *src, struct cf_params_t *params);
+#define UNUSED(x) ((void)(x))
+
+#define SIZE_T_MAX ((size_t)-1)
+#define SIZE_T_HALF_MAX ((SIZE_T_MAX >> 1) + 1)
+
+struct cfc_buffer_t
+{
+        char *buf;
+        size_t cap, pos;
+};
 
 #endif /* CCITTFAX_SRC_CFC_H */
