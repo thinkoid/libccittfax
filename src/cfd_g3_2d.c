@@ -2,9 +2,9 @@
 
 #include <ccittfax/ccittfax.h>
 
-#include "cfd.h"
+#include "cf.h"
 
-struct cfd_buffer_t *
+struct cf_buffer_t *
 cfd_g3_2d(const char *src, struct cf_params_t *params)
 {
         return 0;

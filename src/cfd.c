@@ -2,9 +2,9 @@
 
 #include <ccittfax/ccittfax.h>
 
-#include "cfd.h"
+#include "cf.h"
 
-struct cfd_buffer_t *
+struct cf_buffer_t *
 cfd(const char *src, struct cf_params_t *params)
 {
         if (0 == params)

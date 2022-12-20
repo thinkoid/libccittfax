@@ -1,16 +1,16 @@
 /* -*- mode: c; -*- */
 
-#ifndef CCITTFAX_SRC_CFC_H
-#define CCITTFAX_SRC_CFC_H
+#ifndef CCITTFAX_SRC_CF_H
+#define CCITTFAX_SRC_CF_H
 
 #include <ccittfax/defs.h>
 
 #include <stddef.h>
 
-struct cfc_buffer_t
+struct cf_buffer_t
 {
         char *buf;
         size_t cap, pos;
 };
 
-#endif /* CCITTFAX_SRC_CFC_H */
+#endif /* CCITTFAX_SRC_CF_H */

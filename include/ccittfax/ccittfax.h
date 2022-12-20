@@ -19,29 +19,29 @@ struct cf_params_t
 
 const char *version();
 
-struct cfc_buffer_t *
+struct cf_buffer_t *
 cfc(const char *src, struct cf_params_t *params);
 
-struct cfc_buffer_t *
+struct cf_buffer_t *
 cfc_g3_1d(const char *src, struct cf_params_t *params);
 
-struct cfc_buffer_t *
+struct cf_buffer_t *
 cfc_g3_2d(const char *src, struct cf_params_t *params);
 
-struct cfc_buffer_t *
+struct cf_buffer_t *
 cfc_g4(const char *src, struct cf_params_t *params);
 
 
-struct cfd_buffer_t *
+struct cf_buffer_t *
 cfd(const char *src, struct cf_params_t *params);
 
-struct cfd_buffer_t *
+struct cf_buffer_t *
 cfd_g3_1d(const char *src, struct cf_params_t *params);
 
-struct cfd_buffer_t *
+struct cf_buffer_t *
 cfd_g3_2d(const char *src, struct cf_params_t *params);
 
-struct cfd_buffer_t *
+struct cf_buffer_t *
 cfd_g4(const char *src, struct cf_params_t *params);
 
 #endif /* CCITTFAX_CCITTFAX_H */
