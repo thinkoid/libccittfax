@@ -15,5 +15,6 @@ libccittfax_la_SOURCES =                        \
     cfd_g3_1d.c                                 \
     cfd_g3_2d.c                                 \
     cfd_g4.c                                    \
+    cfd_trie.c                                  \
     cf_utils.c                                  \
     lib.c
