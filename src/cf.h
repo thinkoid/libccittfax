@@ -13,4 +13,10 @@ struct cf_buffer_t
         size_t cap, pos;
 };
 
+struct cf_buffer_t *
+resize_cf_buffer(struct cf_buffer_t *dst);
+
+struct cf_buffer_t *
+make_cf_buffer();
+
 #endif /* CCITTFAX_SRC_CF_H */

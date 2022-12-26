@@ -5,7 +5,7 @@
 #include "cf.h"
 
 struct cf_buffer_t *
-cfd_g4(const char *src, struct cf_params_t *params)
+cfd_g4(const char *src, size_t srclen, struct cf_params_t *params)
 {
         return 0;
 }

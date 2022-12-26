@@ -8,8 +8,6 @@
 #include "cf.h"
 #include "cfc_tables.h"
 
-#include "cf_utils.h"
-
 #define CF_LITTLE_ENDIAN (*(unsigned char *)(&(int){ 1 }))
 
 #define CF_DO_TO_BE(x)                          \
@@ -28,7 +26,7 @@ put_rle_explicit(struct cf_buffer_t *dst, unsigned value, unsigned len)
 
         /* fprintf(stderr, "[%d %d]\n", value, len); */
 
-        if (0 == reserve_buffer(dst))
+        if (0 == resize_cf_buffer(dst))
                 return 1;
 
         written = dst->pos >> 3;
@@ -101,24 +99,6 @@ get_rle(const char *arr, size_t pos, size_t end, int color)
         return i - pos;
 }
 
-static struct cf_buffer_t *
-make_cfc_buffer()
-{
-        struct cf_buffer_t *dst;
-
-        dst = calloc(1, sizeof *dst);
-        if (0 == dst)
-                return 0;
-
-        if (0 == reserve_buffer(dst)) {
-                free(dst->buf);
-                free(dst);
-                dst = 0;
-        }
-
-        return dst;
-}
-
 struct cf_buffer_t *
 cfc_g3_1d(const char *src, struct cf_params_t *params)
 {
@@ -131,7 +111,7 @@ cfc_g3_1d(const char *src, struct cf_params_t *params)
 
         stride = (params->columns + 7) >> 3;
 
-        dst = make_cfc_buffer();
+        dst = make_cf_buffer();
         if (0 == dst) {
                 /* fprintf(stderr, "malloc compression buffer : %s\n", */
                 /*         strerror(errno)); */

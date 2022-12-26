@@ -5,7 +5,7 @@
 #include "cf.h"
 
 struct cf_buffer_t *
-cfd(const char *src, struct cf_params_t *params)
+cfd(const char *src, size_t srclen, struct cf_params_t *params)
 {
         if (0 == params)
                 return 0;
@@ -26,6 +26,6 @@ cfd(const char *src, struct cf_params_t *params)
          */
 
         return params->k < 0
-                ? cfd_g4(src, params) : 0 == params->k
-                ? cfd_g3_1d(src, params) : cfd_g3_2d(src, params);
+                ? cfd_g4(src, srclen, params) : 0 == params->k
+                ? cfd_g3_1d(src, srclen, params) : cfd_g3_2d(src, srclen, params);
 }

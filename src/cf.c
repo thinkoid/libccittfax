@@ -3,10 +3,11 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 
 #include "cf.h"
 
-size_t
+static size_t
 new_capacity(size_t cap, size_t size, size_t add)
 {
         static const size_t x = (size_t)-1;
@@ -30,7 +31,7 @@ new_capacity(size_t cap, size_t size, size_t add)
 }
 
 struct cf_buffer_t *
-reserve_buffer(struct cf_buffer_t *dst)
+resize_cf_buffer(struct cf_buffer_t *dst)
 {
         char *buf;
         size_t cap, written;
@@ -54,6 +55,24 @@ reserve_buffer(struct cf_buffer_t *dst)
 
                 dst->buf = buf;
                 dst->cap = cap;
+        }
+
+        return dst;
+}
+
+struct cf_buffer_t *
+make_cf_buffer()
+{
+        struct cf_buffer_t *dst;
+
+        dst = calloc(1, sizeof *dst);
+        if (0 == dst)
+                return 0;
+
+        if (0 == resize_cf_buffer(dst)) {
+                free(dst->buf);
+                free(dst);
+                dst = 0;
         }
 
         return dst;

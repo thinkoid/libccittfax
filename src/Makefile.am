@@ -6,6 +6,7 @@ include $(top_srcdir)/Makefile.common
 
 lib_LTLIBRARIES = libccittfax.la
 libccittfax_la_SOURCES =                        \
+    cf.c                                        \
     cfc.c                                       \
     cfc_g3_1d.c                                 \
     cfc_g3_2d.c                                 \
@@ -16,5 +17,4 @@ libccittfax_la_SOURCES =                        \
     cfd_g3_2d.c                                 \
     cfd_g4.c                                    \
     cfd_trie.c                                  \
-    cf_utils.c                                  \
     lib.c
