@@ -3,3 +3,4 @@
 /include/ccittfax/_config.h
 /src/Makefile
 /tests/Makefile
+/tests/test

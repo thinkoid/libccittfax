@@ -3,7 +3,7 @@
 EXTRA_DIST = 
 include $(top_srcdir)/Makefile.common
 
-## LIBS += $(BOOST_UNIT_TEST_FRAMEWORK_LIBS) $(top_srcdir)/src/libbs.la
+LIBS += $(top_srcdir)/src/libccittfax.la
 
 TESTS = test
 check_PROGRAMS = test
