@@ -1,6 +1,8 @@
 /* -*- mode: c; -*- */
 
 #include <assert.h>
+#include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
@@ -8,7 +10,7 @@
 #include "cf.h"
 
 static size_t
-new_capacity(size_t cap, size_t size, size_t add)
+cf_new_capacity(size_t cap, size_t size, size_t add)
 {
         static const size_t x = (size_t)-1;
         static const size_t h = (x >> 1) + 1;
@@ -21,8 +23,10 @@ new_capacity(size_t cap, size_t size, size_t add)
         if (add > x - size)
                 return 0;
 
-        for (; cap < h && cap < size + add; cap <<= 1) ;
-        for (; cap < x - 1 && cap < size + add; cap += (x - cap) >> 1) ;
+        for (; cap < h && cap < size + add; cap <<= 1)
+                ;
+        for (; cap < x - 1 && cap < size + add; cap += (x - cap) >> 1)
+                ;
 
         if (cap < size + add)
                 cap = x;
@@ -30,50 +34,68 @@ new_capacity(size_t cap, size_t size, size_t add)
         return cap;
 }
 
-struct cf_buffer_t *
-resize_cf_buffer(struct cf_buffer_t *dst)
+static struct cf_buffer_t *
+cf_resize_buffer_explicit(struct cf_buffer_t *cf_buf, size_t cap)
 {
         char *buf;
-        size_t cap, written;
+        size_t written;
 
-        written = (dst->pos + 7) >> 3;
-
-        if (dst->cap - written < sizeof(unsigned)) {
-                cap = new_capacity(dst->cap, written, sizeof(unsigned));
-                assert(cap && cap > dst->cap);
-
-                buf = malloc(cap);
-                if (0 == buf) {
-                        /* fprintf(stderr, "reserve buffer : %s\n", strerror(errno)); */
-                        return 0;
-                }
-
-                memcpy(buf, dst->buf, written);
-                memset(buf + written, 0, cap - written);
-
-                free(dst->buf);
-
-                dst->buf = buf;
-                dst->cap = cap;
+        buf = malloc(cap);
+        if (0 == buf) {
+                fprintf(stderr, "reserve buffer : %s\n", strerror(errno));
+                return 0;
         }
 
-        return dst;
+        written = (cf_buf->pos + 7) >> 3;
+
+        memcpy(buf, cf_buf->buf, written);
+        memset(buf + written, 0, cap - written);
+
+        free(cf_buf->buf);
+
+        cf_buf->buf = buf;
+        cf_buf->cap = cap;
+
+        return cf_buf;
 }
 
 struct cf_buffer_t *
-make_cf_buffer()
+cf_resize_buffer_least(struct cf_buffer_t *cf_buf, size_t add)
 {
-        struct cf_buffer_t *dst;
+        size_t cap, written;
 
-        dst = calloc(1, sizeof *dst);
-        if (0 == dst)
-                return 0;
+        written = (cf_buf->pos + 7) >> 3;
+        if (add > cf_buf->cap - written) {
+                cap = cf_new_capacity(cf_buf->cap, written, add);
+                if (0 == cap)
+                        return 0;
 
-        if (0 == resize_cf_buffer(dst)) {
-                free(dst->buf);
-                free(dst);
-                dst = 0;
+                return cf_resize_buffer_explicit(cf_buf, cap);
         }
 
-        return dst;
+        return cf_buf;
+}
+
+struct cf_buffer_t *
+cf_resize_buffer(struct cf_buffer_t *cf_buf)
+{
+        return cf_resize_buffer_least(cf_buf, sizeof(unsigned));
+}
+
+struct cf_buffer_t *
+cf_make_buffer()
+{
+        struct cf_buffer_t *cf_buf;
+
+        cf_buf = calloc(1, sizeof *cf_buf);
+        if (0 == cf_buf)
+                return 0;
+
+        if (0 == cf_resize_buffer(cf_buf)) {
+                free(cf_buf->buf);
+                free(cf_buf);
+                cf_buf = 0;
+        }
+
+        return cf_buf;
 }

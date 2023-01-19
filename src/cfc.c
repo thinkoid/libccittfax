@@ -5,6 +5,15 @@
 #include "cf.h"
 
 struct cf_buffer_t *
+cfc_g3_1d(const char *src, struct cf_params_t *params);
+
+struct cf_buffer_t *
+cfc_g3_2d(const char *src, struct cf_params_t *params);
+
+struct cf_buffer_t *
+cfc_g4(const char *src, struct cf_params_t *params);
+
+struct cf_buffer_t *
 cfc(const char *src, struct cf_params_t *params)
 {
         if (0 == params)

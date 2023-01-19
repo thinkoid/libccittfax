@@ -3,20 +3,54 @@
 #include <ccittfax/ccittfax.h>
 
 #include <assert.h>
+#include <errno.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "cf.h"
 #include "cfc_tables.h"
 
-#define CF_LITTLE_ENDIAN (*(unsigned char *)(&(int){ 1 }))
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define CF_LITTLE_ENDIAN 1
+#else
+#define CF_LITTLE_ENDIAN 0
+#endif /* __BYTE_ORDER__  == __ORDER_LITTLE_ENDIAN__ */
 
-#define CF_DO_TO_BE(x)                          \
-        ((x << 24) |                            \
-         ((x << 8) & 0x00FF0000) |              \
-         ((x >> 8) & 0x0000FF00) |              \
-         ((x >> 24) & 0x000000FF))
+#define CF_DO_CAT(a, b) a##b
+#define CF_CAT(a, b) CF_DO_CAT(a, b)
 
-#define CF_TO_BE(x)  CF_LITTLE_ENDIAN ? CF_DO_TO_BE(x) : (x)
+static inline uint16_t cf_bswap16(uint16_t x)
+{
+        return (x << 8) | (x >> 8);
+}
+
+static inline uint32_t cf_bswap32(uint32_t x)
+{
+        return (x << 24) | ((x << 8) & 0x00FF0000) | ((x >> 8) & 0x0000FF00) |
+               (x >> 24);
+}
+
+static inline uint64_t cf_bswap64(uint64_t x)
+{
+        return (x << 56) | ((x << 40) & 0x00FF000000000000) |
+               ((x << 24) & 0x0000FF0000000000) |
+               ((x << 8) & 0x000000FF00000000) |
+               ((x >> 8) & 0x00000000FF000000) |
+               ((x >> 24) & 0x0000000000FF0000) |
+               ((x >> 40) & 0x000000000000FF00) | (x >> 56);
+}
+
+#if CF_LITTLE_ENDIAN
+#  define CF_TOBE16(x) cf_bswap16(x)
+#  define CF_TOBE32(x) cf_bswap32(x)
+#  define CF_TOBE64(x) cf_bswap64(x)
+#else
+#  define CF_TOBE16(x) (x)
+#  define CF_TOBE32(x) (x)
+#  define CF_TOBE64(x) (x)
+#endif /* CF_LITTLE_ENDIAN */
 
 static int
 put_rle_explicit(struct cf_buffer_t *dst, unsigned value, unsigned len)
@@ -24,9 +58,12 @@ put_rle_explicit(struct cf_buffer_t *dst, unsigned value, unsigned len)
         const char *p;
         size_t i, n, written;
 
-        /* fprintf(stderr, "[%d %d]\n", value, len); */
+        if (0 == len)
+                return 0;
 
-        if (0 == resize_cf_buffer(dst))
+        /* fprintf(stderr, "[0x%08x %4d]\n", value, len); */
+
+        if (0 == cf_resize_buffer(dst))
                 return 1;
 
         written = dst->pos >> 3;
@@ -34,7 +71,7 @@ put_rle_explicit(struct cf_buffer_t *dst, unsigned value, unsigned len)
         value <<= (sizeof(value) << 3) - len;
         value >>= dst->pos & 7;
 
-        value = CF_TO_BE(value);
+        value = CF_TOBE32(value);
         p = (char *)&value;
 
         for (i = 0, n = ((dst->pos & 7) + len + 7) >> 3; i < n; ++i)
@@ -62,7 +99,7 @@ put_rle(struct cf_buffer_t *dst, int rle, int color)
         int m, n;
         const struct cfc_code_t *term_table, *mkup_table;
 
-        term_table = color ? cfc_white_term_rle   : cfc_black_term_rle;
+        term_table = color ? cfc_white_term_rle : cfc_black_term_rle;
         mkup_table = color ? cfc_white_makeup_rle : cfc_black_makeup_rle;
 
         m = rle >> 6;
@@ -70,15 +107,14 @@ put_rle(struct cf_buffer_t *dst, int rle, int color)
 
         for (; m; m -= (m < 40 ? m : 40)) {
                 if (put_code(dst, mkup_table + (m < 40 ? m : 40) - 1)) {
-                        /* fprintf(stderr, "put_rle : rle %d, color %d\n", */
-                        /*         rle, color); */
+                        fprintf(stderr, "put_rle : rle %d, color %d\n", rle,
+                                color);
                         return 1;
                 }
         }
 
         if (put_code(dst, term_table + n)) {
-                /* fprintf(stderr, "put_rle : rle %d, color %d\n", */
-                /*         rle, color); */
+                fprintf(stderr, "put_rle : rle %d, color %d\n", rle, color);
                 return 1;
         }
 
@@ -95,7 +131,8 @@ static int
 get_rle(const char *arr, size_t pos, size_t end, int color)
 {
         size_t i;
-        for (i = pos; i < end && is_same_color(arr, i, color); ++i) ;
+        for (i = pos; i < end && is_same_color(arr, i, color); ++i)
+                ;
         return i - pos;
 }
 
@@ -111,10 +148,10 @@ cfc_g3_1d(const char *src, struct cf_params_t *params)
 
         stride = (params->columns + 7) >> 3;
 
-        dst = make_cf_buffer();
+        dst = cf_make_buffer();
         if (0 == dst) {
-                /* fprintf(stderr, "malloc compression buffer : %s\n", */
-                /*         strerror(errno)); */
+                fprintf(stderr, "malloc compression buffer : %s\n",
+                        strerror(errno));
                 goto err;
         }
 
@@ -123,7 +160,7 @@ cfc_g3_1d(const char *src, struct cf_params_t *params)
         for (i = 0; i < params->rows; ++i, src += stride) {
                 color = 1;
 
-                for (pos = 0; pos < params->columns; ) {
+                for (pos = 0; pos < params->columns;) {
                         rle = get_rle(src, pos, params->columns, color);
                         put_rle(dst, rle, color);
 
@@ -134,8 +171,8 @@ cfc_g3_1d(const char *src, struct cf_params_t *params)
                 if (params->end_of_line)
                         put_eol(dst);
 
-                if ((pos % 8) && params->encoded_byte_align)
-                        put_rle_explicit(dst, 0, 8 - pos % 8);
+                if (params->encoded_byte_align)
+                        put_rle_explicit(dst, 0, (8 - (dst->pos & 7)) & 7);
         }
 
         if (params->end_of_block) {

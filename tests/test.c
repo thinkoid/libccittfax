@@ -109,7 +109,7 @@ main(int argc, char **argv)
         fprintf(stderr, "  black_is_1         : %d\n", params.black_is_1);
         fprintf(stderr, "  damage_limit       : %d\n", params.damage_limit);
 
-        pdst = cfd_g3_1d(psrc, srclen, &params);
+        pdst = cfd(psrc, srclen, &params);
         if (0 == pdst) {
                 fprintf(stderr, " --> lookie ma\n");
         }

@@ -7,16 +7,18 @@
 
 #include <stddef.h>
 
-struct cf_buffer_t
-{
+struct cf_buffer_t {
         char *buf;
         size_t cap, pos;
 };
 
 struct cf_buffer_t *
-resize_cf_buffer(struct cf_buffer_t *dst);
+cf_resize_buffer_least(struct cf_buffer_t *cf_buf, size_t add);
 
 struct cf_buffer_t *
-make_cf_buffer();
+cf_resize_buffer(struct cf_buffer_t *cf_buf);
+
+struct cf_buffer_t *
+cf_make_buffer();
 
 #endif /* CCITTFAX_SRC_CF_H */
