@@ -9,6 +9,43 @@
 #include <stddef.h>
 #include <stdint.h>
 
+inline uint16_t cf_bswap16(uint16_t x)
+{
+        return (x << 8) | (x >> 8);
+}
+
+inline uint32_t cf_bswap32(uint32_t x)
+{
+        return (x << 24) | ((x << 8) & 0x00FF0000) | ((x >> 8) & 0x0000FF00) |
+               (x >> 24);
+}
+
+inline uint64_t cf_bswap64(uint64_t x)
+{
+        return (x << 56) | ((x << 40) & 0x00FF000000000000) |
+               ((x << 24) & 0x0000FF0000000000) |
+               ((x << 8) & 0x000000FF00000000) |
+               ((x >> 8) & 0x00000000FF000000) |
+               ((x >> 24) & 0x0000000000FF0000) |
+               ((x >> 40) & 0x000000000000FF00) | (x >> 56);
+}
+
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#  define CF_LITTLE_ENDIAN 1
+#else
+#  define CF_LITTLE_ENDIAN 0
+#endif /* __BYTE_ORDER__  == __ORDER_LITTLE_ENDIAN__ */
+
+#if CF_LITTLE_ENDIAN
+#  define CF_TOBE16(x) cf_bswap16(x)
+#  define CF_TOBE32(x) cf_bswap32(x)
+#  define CF_TOBE64(x) cf_bswap64(x)
+#else
+#  define CF_TOBE16(x) (x)
+#  define CF_TOBE32(x) (x)
+#  define CF_TOBE64(x) (x)
+#endif /* CF_LITTLE_ENDIAN */
+
 #define CF_DO_CAT(a, b) a##b
 #define CF_CAT(a, b) CF_DO_CAT(a, b)
 

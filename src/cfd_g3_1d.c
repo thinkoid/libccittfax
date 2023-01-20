@@ -15,12 +15,6 @@ struct cf_state_t {
         int color;
 };
 
-static inline int
-eob(struct cf_buffer_t *src)
-{
-        return src->pos >= (src->cap << 3);
-}
-
 static int
 do_get_rle(struct cf_buffer_t *cf_buf, int color)
 {
@@ -82,7 +76,7 @@ try_get_eol(struct cf_buffer_t *cf_buf)
 }
 
 static inline int
-get_eol_tail(struct cf_buffer_t *cf_buf)
+get_eob_tail(struct cf_buffer_t *cf_buf)
 {
         return  get_eol(cf_buf) &&
                 get_eol(cf_buf) &&
@@ -93,11 +87,11 @@ get_eol_tail(struct cf_buffer_t *cf_buf)
 }
 
 static inline int
-try_get_eol_tail(struct cf_buffer_t *cf_buf)
+try_get_eob_tail(struct cf_buffer_t *cf_buf)
 {
         size_t pos = cf_buf->pos;
 
-        if (!get_eol_tail(cf_buf))
+        if (!get_eob_tail(cf_buf))
                 cf_buf->pos = pos;
 
         return cf_buf->pos != pos;
@@ -189,9 +183,8 @@ cfd_g3_1d_decode_newline(struct cf_state_t *state)
 
         byte_align(dst);
 
-        if (try_get_eol_tail(src)) {
+        if (try_get_eob_tail(src))
                 return 0;
-        }
 
         if (state->a0 < state->params->columns)
                 fprintf(stderr, "underflow: expected %d columns, got %d\n",
@@ -232,24 +225,6 @@ cfd_g3_1d_decode(struct cf_state_t *state, int rle)
         }
 }
 
-static struct cf_buffer_t *
-cfd_do_g3_1d(struct cf_state_t *state)
-{
-        struct cf_buffer_t *src = state->src;
-        try_get_eol(src);
-
-        for (; !eob(src); ) {
-                if (cfd_g3_1d_decode(state, get_rle(src, state->color))) {
-                        free(state->dst->buf);
-                        free(state->dst);
-                        state->dst = 0;
-                        break;
-                }
-        }
-
-        return state->dst;
-}
-
 struct cf_buffer_t *
 cfd_g3_1d(const char *buf, size_t len, struct cf_params_t *params)
 {
@@ -261,5 +236,15 @@ cfd_g3_1d(const char *buf, size_t len, struct cf_params_t *params)
                 return 0;
 
         state = (struct cf_state_t){ &src, dst, params, 0, 0, 0, 0, 0, 0 };
-        return cfd_do_g3_1d(&state);
+
+        try_get_eol(&src);
+        for (; src.pos < (src.cap << 3); ) {
+                if (cfd_g3_1d_decode(&state, get_rle(&src, state.color))) {
+                        free(dst->buf);
+                        free(dst);
+                        return 0;
+                }
+        }
+
+        return dst;
 }
