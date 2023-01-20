@@ -85,7 +85,6 @@ main(int argc, char **argv)
         size_t n, srclen;
 
         struct cf_buffer_t *pdst;
-
         struct cf_params_t params = { 0 };
 
         psrc = load_file(argv[1], &srclen, &params);
@@ -110,17 +109,18 @@ main(int argc, char **argv)
         fprintf(stderr, "  damage_limit       : %d\n", params.damage_limit);
 
         pdst = cfd(psrc, srclen, &params);
-        if (0 == pdst) {
-                fprintf(stderr, " --> lookie ma\n");
-        }
+        if (0 == pdst)
+                goto err;
 
-        if (pdst) {
-                free(pdst->buf);
-                free(pdst);
-        }
+        fwrite(&params.columns, sizeof params.columns, 1, stdout);
+        fwrite(&params.rows,    sizeof params.rows,    1, stdout);
 
+        fwrite(pdst->buf, (pdst->pos + 7) >> 3, 1, stdout);
+
+        free(pdst->buf);
+        free(pdst);
+err:
         free(psrc);
-
 end:
         return 0;
 }
