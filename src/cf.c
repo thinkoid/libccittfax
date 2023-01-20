@@ -1,11 +1,9 @@
 /* -*- mode: c; -*- */
 
-#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stddef.h>
 
 #include "cf.h"
 
@@ -98,4 +96,54 @@ cf_make_buffer()
         }
 
         return cf_buf;
+}
+
+static void cf_setbits_white(char *buf, size_t beg, size_t end)
+{
+        if (end - beg < 8 - (beg & 7)) {
+                buf[beg >> 3] |= (0xff >> (beg & 7)) &
+                                 (0xff << (8 - (end & 7)));
+        } else {
+                buf[beg >> 3] |= (0xff >> (beg & 7));
+                beg = (beg + 7) & ~7;
+
+                if ((end - beg) >> 3)
+                        memset(buf + (beg >> 3), 0xff, (end - beg) >> 3);
+
+                if (end & 7)
+                        buf[end >> 3] |= (0xff << (8 - (end & 7)));
+        }
+}
+
+static void cf_setbits_black(char *buf, size_t beg, size_t end)
+{
+        if (end - beg < 8 - (beg & 7)) {
+                buf[beg >> 3] &= (0xff << (8 - (beg & 7))) |
+                                 (0xff >> (end & 7));
+        } else {
+                buf[beg >> 3] &= 0xff << (8 - (beg & 7));
+                beg = (beg + 7) & ~7;
+
+                if ((end - beg) >> 3)
+                        memset(buf + (beg >> 3), 0, (end - beg) >> 3);
+
+                if (end & 7)
+                        buf[end >> 3] &= 0xff >> (end & 7);
+        }
+}
+
+int cf_getbit(const char *buf, size_t pos)
+{
+        return !!(*((uint8_t *)buf + (pos >> 3)) & (0x80 >> (pos & 7)));
+}
+
+void cf_setbit(char *buf, size_t pos, int value)
+{
+        *((uint8_t *)buf + (pos / 8)) |= (uint8_t)(!!value) << (7 - (pos & 7));
+}
+
+void cf_setbits(char *buf, size_t beg, size_t end, int color)
+{
+        color ? cf_setbits_white(buf, beg, end) :
+                cf_setbits_black(buf, beg, end);
 }
