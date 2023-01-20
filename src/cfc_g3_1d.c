@@ -12,7 +12,7 @@
 #include "cfc_tables.h"
 
 static int
-put_rle_explicit(struct cf_buffer_t *dst, unsigned value, unsigned len)
+put_explicit(struct cf_buffer_t *dst, unsigned value, unsigned len)
 {
         const char *p;
         size_t i, n, written;
@@ -43,7 +43,7 @@ put_rle_explicit(struct cf_buffer_t *dst, unsigned value, unsigned len)
 static inline int
 put_code(struct cf_buffer_t *dst, const struct cfc_code_t *code)
 {
-        return put_rle_explicit(dst, code->value, code->len);
+        return put_explicit(dst, code->value, code->len);
 }
 
 static inline int
@@ -131,7 +131,7 @@ cfc_g3_1d(const char *src, struct cf_params_t *params)
                         put_eol(dst);
 
                 if (params->encoded_byte_align)
-                        put_rle_explicit(dst, 0, (8 - (dst->pos & 7)) & 7);
+                        put_explicit(dst, 0, (8 - (dst->pos & 7)) & 7);
         }
 
         if (params->end_of_block) {
