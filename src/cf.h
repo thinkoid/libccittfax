@@ -9,12 +9,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-#  define CF_LITTLE_ENDIAN 1
-#else
-#  define CF_LITTLE_ENDIAN 0
-#endif /* __BYTE_ORDER__  == __ORDER_LITTLE_ENDIAN__ */
-
 inline uint16_t cf_bswap16(uint16_t x)
 {
         return (x << 8) | (x >> 8);
@@ -35,6 +29,12 @@ inline uint64_t cf_bswap64(uint64_t x)
                ((x >> 24) & 0x0000000000FF0000) |
                ((x >> 40) & 0x000000000000FF00) | (x >> 56);
 }
+
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#  define CF_LITTLE_ENDIAN 1
+#else
+#  define CF_LITTLE_ENDIAN 0
+#endif /* __BYTE_ORDER__  == __ORDER_LITTLE_ENDIAN__ */
 
 #if CF_LITTLE_ENDIAN
 #  define CF_TOBE16(x) cf_bswap16(x)
