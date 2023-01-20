@@ -3,8 +3,7 @@
 #ifndef CCITTFAX_SRC_CFD_TRIE_H
 #define CCITTFAX_SRC_CFD_TRIE_H
 
-struct cfd_trie_state_t
-{
+struct cfd_trie_state_t {
         int color, state;
 };
 
