@@ -5,8 +5,8 @@ include $(top_srcdir)/Makefile.common
 
 LIBS += $(top_srcdir)/src/libccittfax.la
 
-TESTS = test
-check_PROGRAMS = test
+TESTS = cfd
+check_PROGRAMS = cfd
 
-test_SOURCES = test.c
-test_LDADD = $(LIBS)
+cfd_SOURCES = cfd.c file.c
+cfd_LDADD = $(LIBS)
