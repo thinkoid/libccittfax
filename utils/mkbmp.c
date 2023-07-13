@@ -1,5 +1,10 @@
 /* -*- mode: c; -*- */
 
+/**
+ *  Load 1bpp image file with a prefix of two integers -- the width and the
+ *  height of the image -- and spit out an 8bpp BMP file.
+ */
+
 #include <assert.h>
 #include <errno.h>
 #include <math.h>
