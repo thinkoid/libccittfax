@@ -21,6 +21,11 @@ struct cf_params_t
 
 const char *version();
 
+struct cf_buffer_t {
+        char *buf;
+        size_t cap, pos;
+};
+
 struct cf_buffer_t *
 cfc(const char *src, struct cf_params_t *params);
 

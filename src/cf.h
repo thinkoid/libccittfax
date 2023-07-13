@@ -78,11 +78,6 @@ int cf_getbit(const char *buf, size_t pos);
 void cf_setbit(char *buf, size_t pos, int value);
 void cf_setbits(char *buf, size_t beg, size_t end, int color);
 
-struct cf_buffer_t {
-        char *buf;
-        size_t cap, pos;
-};
-
 struct cf_buffer_t *
 cf_resize_buffer_least(struct cf_buffer_t *cf_buf, size_t add);
 
