@@ -8,7 +8,6 @@
 #include <ccittfax/ccittfax.h>
 
 #include "file.h"
-#include "../src/cf.h"
 
 static unsigned char *
 do_load_file(FILE *pf, size_t *srclen, struct cf_params_t *params)

@@ -7,7 +7,6 @@
 
 #include <ccittfax/ccittfax.h>
 
-#include "../src/cf.h"
 #include "file.h"
 
 int
