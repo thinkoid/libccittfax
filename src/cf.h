@@ -87,4 +87,16 @@ cf_resize_buffer(struct cf_buffer_t *cf_buf);
 struct cf_buffer_t *
 cf_make_buffer();
 
+int
+put_rle_explicit(struct cf_buffer_t *dst, unsigned value, unsigned len);
+
+int
+put_eol(struct cf_buffer_t *dst);
+
+int
+put_eol_n(struct cf_buffer_t *buf, size_t n);
+
+int
+put_rle(struct cf_buffer_t *dst, int rle, int color);
+
 #endif /* CCITTFAX_SRC_CF_H */
