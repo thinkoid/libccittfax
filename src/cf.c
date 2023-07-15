@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <ccittfax/ccittfax.h>
 #include "cf.h"
 
 static size_t
