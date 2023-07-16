@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "cf.h"
+#include "cfc_common.h"
 #include "cfc_tables.h"
 
 static inline int
@@ -40,7 +41,7 @@ cfc_g3_1d(const char *src, struct cf_params_t *params)
                 goto err;
         }
 
-        put_eol(dst);
+        cfc_put_eol(dst);
 
         stride = (params->columns + 7) >> 3;
         for (line = 0; line < params->rows; ++line, src += stride) {
@@ -48,7 +49,7 @@ cfc_g3_1d(const char *src, struct cf_params_t *params)
 
                 for (a0 = 0; a0 < params->columns;) {
                         rle = get_rle(src, a0, params->columns, color);
-                        if (put_rle(dst, rle, color))
+                        if (cfc_put_rle(dst, rle, color))
                                 goto err;
 
                         a0 += rle;
@@ -56,14 +57,14 @@ cfc_g3_1d(const char *src, struct cf_params_t *params)
                 }
 
                 if (params->end_of_line)
-                        put_eol(dst);
+                        cfc_put_eol(dst);
 
                 if (params->encoded_byte_align)
-                        put_explicit(dst, 0, (8 - (dst->pos & 7)) & 7);
+                        cfc_put_rle_explicit(dst, 0, (8 - (dst->pos & 7)) & 7);
         }
 
         if (params->end_of_block)
-                put_eol_n(dst, 6);
+                cfc_put_eol_n(dst, 6);
 
         return dst;
 

@@ -8,6 +8,7 @@ lib_LTLIBRARIES = libccittfax.la
 libccittfax_la_SOURCES =                        \
     cf.c                                        \
     cfc.c                                       \
+    cfc_common.c                                \
     cfc_g3_1d.c                                 \
     cfc_g3_2d.c                                 \
     cfc_g4.c                                    \
