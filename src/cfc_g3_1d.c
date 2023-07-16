@@ -29,7 +29,7 @@ get_rle(const char *arr, size_t pos, size_t end, int color)
 struct cf_buffer_t *
 cfc_g3_1d(const char *src, struct cf_params_t *params)
 {
-        int i, line, a0, stride, rle, color;
+        int line, a0, stride, rle, color;
         struct cf_buffer_t *dst;
 
         assert(params->columns);

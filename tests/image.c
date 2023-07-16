@@ -8,8 +8,6 @@
 #include "../src/cf.h"
 #include "image.h"
 
-#define UNUSED(x) ((void)x)
-
 static char *to_1bpp(char *src, int w, int h)
 {
         int i, j, len;

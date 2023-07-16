@@ -12,11 +12,13 @@
 int
 main(int argc, char **argv)
 {
-        unsigned char src[256], *psrc = 0;
-        size_t n, srclen;
+        unsigned char *psrc = 0;
+        size_t srclen;
 
         struct cf_buffer_t *pdst;
         struct cf_params_t params = { 0 };
+
+        UNUSED(argc);
 
         psrc = load_file(argv[1], &srclen, &params);
         if (0 == psrc) {
@@ -39,7 +41,7 @@ main(int argc, char **argv)
         fprintf(stderr, "  black_is_1         : %d\n", params.black_is_1);
         fprintf(stderr, "  damage_limit       : %d\n", params.damage_limit);
 
-        pdst = cfd(psrc, srclen, &params);
+        pdst = cfd((char *)psrc, srclen, &params);
         if (0 == pdst)
                 goto err;
 

@@ -7,8 +7,6 @@
 
 #include "image.h"
 
-#define UNUSED(x) ((void)x)
-
 static void usage()
 {
         fprintf(stderr, "usage: program [options]\n");
