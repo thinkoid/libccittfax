@@ -9,6 +9,10 @@
 #include "cf.h"
 #include "cfc_tables.h"
 
+extern inline uint16_t cf_bswap16(uint16_t x);
+extern inline uint32_t cf_bswap32(uint32_t x);
+extern inline uint64_t cf_bswap64(uint64_t x);
+
 static size_t
 cf_new_capacity(size_t cap, size_t size, size_t add)
 {
