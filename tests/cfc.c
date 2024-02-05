@@ -11,13 +11,13 @@ static void usage()
 {
         fprintf(stderr, "usage: program [options]\n");
         fprintf(stderr, "\nOptions\n");
-        fprintf(stderr, "    -k number : encoding scheme\n");
-        fprintf(stderr, "    -l        : end of line (default 0)\n");
-        fprintf(stderr, "    -a        : byte align (default 0)\n");
-        fprintf(stderr, "    -b value  : end of block boolean (default 1)\n");
-        fprintf(stderr, "    -v value  : black value (default 0)\n");
-        fprintf(stderr,
-                "    -d number : DamagedRowsBeforeError (default k - 1)\n");
+        fprintf(stderr, "    -k number : encoding (negative is Group 4, "
+                "0 is Group 3 1D, positive is Group 3 2D)\n");
+        fprintf(stderr, "    -l        : EOL codes (default false)\n");
+        fprintf(stderr, "    -a        : byte-aligned lines (default false)\n");
+        fprintf(stderr, "    -e        : EOB present (default true)\n");
+        fprintf(stderr, "    -b        : black value is 1 (default false, black is 0)\n");
+        fprintf(stderr, "    -d number : DamagedRowsBeforeError (default k - 1)\n");
         exit(2);
 }
 
@@ -35,26 +35,26 @@ parse_args(int argc, char **argv, struct cf_params_t *params)
                 *params = (struct cf_params_t){ 0, 0, 0, 0, 0, 1, 0, 0 };
         }
 
-        while ((opt = getopt(argc, argv, "k:albzd:")) != -1) {
+        while ((opt = getopt(argc, argv, "k:alebd:")) != -1) {
                 switch (opt) {
                 case 'k': /* compression type */
                         params->k = atol(optarg);
-                        break;
-
-                case 'l': /* EOL indicator */
-                        params->end_of_line = 1;
                         break;
 
                 case 'a': /* EncodedByteAlign indicator */
                         params->encoded_byte_align = 1;
                         break;
 
-                case 'b': /* EndOfBlock indicator */
+                case 'l': /* EOL indicator */
+                        params->end_of_line = 1;
+                        break;
+
+                case 'e': /* EndOfBlock indicator */
                         params->end_of_block = 1;
                         break;
 
-                case 'v': /* BlackIsOne indicator */
-                        params->black_is_1 = !!atol(optarg);
+                case 'b': /* BlackIsOne indicator, default false */
+                        params->black_is_1 = 1;
                         break;
 
                 case 'd': /* damage rows before error */
