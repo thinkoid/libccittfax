@@ -4,8 +4,8 @@ EXTRA_DIST =
 
 include $(top_srcdir)/Makefile.common
 
-lib_LTLIBRARIES = libccittfax.la
-libccittfax_la_SOURCES =                        \
+noinst_LIBRARIES = libccittfax.a
+libccittfax_a_SOURCES =                         \
     cf.c                                        \
     cfc.c                                       \
     cfc_common.c                                \

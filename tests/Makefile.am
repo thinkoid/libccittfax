@@ -3,7 +3,7 @@
 EXTRA_DIST = 
 include $(top_srcdir)/Makefile.common
 
-LIBS += $(top_srcdir)/src/libccittfax.la
+LIBS += $(top_srcdir)/src/libccittfax.a
 
 bin_PROGRAMS = cfc cfd
 
