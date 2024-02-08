@@ -26,7 +26,7 @@ get_rle(const char *arr, size_t pos, size_t end, int color)
         return cur - pos;
 }
 
-static int
+int
 cfc_g3_1d_line(struct cf_buffer_t *dst, struct cf_buffer_t *src,
                struct cf_params_t *params)
 {
