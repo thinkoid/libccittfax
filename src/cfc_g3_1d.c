@@ -12,12 +12,6 @@
 #include "cfc_common.h"
 #include "cfc_tables.h"
 
-static inline void
-cf_byte_align(struct cf_buffer_t *buf)
-{
-        buf->pos = (buf->pos + 7) & ~7;
-}
-
 static inline int
 is_same_color(const char *arr, size_t pos, int color)
 {
@@ -66,7 +60,7 @@ cfc_do_g3_1d(struct cf_buffer_t *dst, struct cf_buffer_t *src,
                         goto err;
 
                 /* source row always starts at a byte boundary */
-                cf_byte_align(src);
+                cfc_byte_align(src);
 
                 if (params->end_of_line && cfc_put_eol(dst))
                         goto err;
