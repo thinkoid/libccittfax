@@ -9,24 +9,6 @@
 
 #include "../src/cf.h"
 
-static int
-find_changing(const char *buf, int pos, int endpos)
-{
-        int color = 0;
-
-        if (pos < 0)
-                pos = 0;
-        else
-                color = cf_get_color(buf, pos);
-
-        for(; pos < endpos; ++pos) {
-                if (color != cf_get_color(buf, pos))
-                        return pos;
-        }
-
-        return endpos;
-}
-
 static void
 do_test_beg(unsigned char a, unsigned char b, unsigned char c, unsigned char d,
             int expected)
@@ -34,7 +16,7 @@ do_test_beg(unsigned char a, unsigned char b, unsigned char c, unsigned char d,
         int a0 = -1;
 
         const unsigned char buf[] = { a, b, c, d };
-        a0 = find_changing((const char *)buf, a0, sizeof(buf) << 3);
+        a0 = cf_find_changing((const char *)buf, a0, sizeof(buf) << 3);
 
         if (a0 != expected) {
                 fprintf(stderr, "--> error: expected %d, got %d\n", expected, a0);

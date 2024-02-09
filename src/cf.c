@@ -158,3 +158,20 @@ void cf_byte_align(struct cf_buffer_t *buf)
 {
         buf->pos = (buf->pos + 7) & ~7;
 }
+
+int cf_find_changing(const char *buf, int pos, int endpos)
+{
+        int color = 0;
+
+        if (pos < 0)
+                pos = 0;
+        else
+                color = cf_get_color(buf, pos);
+
+        for(; pos < endpos; ++pos) {
+                if (color != cf_get_color(buf, pos))
+                        return pos;
+        }
+
+        return endpos;
+}

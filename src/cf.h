@@ -102,5 +102,6 @@ struct cf_buffer_t *
 cf_make_buffer();
 
 void cf_byte_align(struct cf_buffer_t *buf);
+int cf_find_changing(const char *buf, int pos, int endpos);
 
 #endif /* CCITTFAX_SRC_CF_H */
