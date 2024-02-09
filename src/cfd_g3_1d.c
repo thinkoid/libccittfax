@@ -152,12 +152,6 @@ fill(struct cf_buffer_t *cf_buf, int n, int color)
         return 0;
 }
 
-static void
-byte_align(struct cf_buffer_t *buf)
-{
-        buf->pos = (buf->pos + 7) & ~7;
-}
-
 static int
 cfd_g3_1d_decode_other(struct cf_state_t *state, int rle)
 {
@@ -181,7 +175,7 @@ cfd_g3_1d_decode_newline(struct cf_state_t *state)
         if (fill(dst, params->columns - state->a0, params->black_is_1))
                 return 1;
 
-        byte_align(dst);
+        cfc_byte_align(dst);
 
         if (try_get_eob_tail(src))
                 return 0;
@@ -191,7 +185,7 @@ cfd_g3_1d_decode_newline(struct cf_state_t *state)
                         state->params->columns, state->a0);
 
         if (state->params->encoded_byte_align)
-                byte_align(state->src);
+                cfc_byte_align(state->src);
 
         state->a0 = 0;
         state->color = 1;
