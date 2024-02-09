@@ -88,6 +88,9 @@ inline int cf_is_black(const char *buf, size_t pos) {
         return 1 == cf_get_color(buf, pos);
 }
 
+inline int cf_is_same_color(const char *buf, size_t pos, int color) {
+        return color == cf_get_color(buf, pos);
+}
 
 void cf_setbit(char *buf, size_t pos, int value);
 void cf_setbits(char *buf, size_t beg, size_t end, int color);
