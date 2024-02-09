@@ -75,6 +75,20 @@ ROTL_DEF(uint64_t, 64)
 
 int cf_getbit(const char *buf, size_t pos);
 
+inline int cf_get_color(const char *buf, size_t pos) {
+        /* 0 is white, 1 is black; allow for inverse colors, pass params */
+        return cf_getbit(buf, pos);
+}
+
+inline int cf_is_white(const char *buf, size_t pos) {
+        return 0 == cf_get_color(buf, pos);
+}
+
+inline int cf_is_black(const char *buf, size_t pos) {
+        return 1 == cf_get_color(buf, pos);
+}
+
+
 void cf_setbit(char *buf, size_t pos, int value);
 void cf_setbits(char *buf, size_t beg, size_t end, int color);
 

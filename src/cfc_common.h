@@ -16,6 +16,12 @@ int
 cfc_put_eol_n(struct cf_buffer_t *buf, size_t n);
 
 int
+cfc_put_eol_0(struct cf_buffer_t *buf);
+
+int
+cfc_put_eol_1(struct cf_buffer_t *buf);
+
+int
 cfc_put_rle(struct cf_buffer_t *dst, int rle, int color);
 
 void

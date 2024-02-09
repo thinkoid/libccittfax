@@ -48,6 +48,24 @@ cfc_put_eol(struct cf_buffer_t *buf)
         return cfc_put_code(buf, &cfc_eol);
 }
 
+static inline int
+cfc_put_eol_x(struct cf_buffer_t *buf, int x)
+{
+        return cfc_put_eol(buf) ? cfc_put_rle_explicit(buf, x, 1) : 1;
+}
+
+int
+cfc_put_eol_0(struct cf_buffer_t *buf)
+{
+        return cfc_put_eol_x(buf, 0);
+}
+
+int
+cfc_put_eol_1(struct cf_buffer_t *buf)
+{
+        return cfc_put_eol_x(buf, 1);
+}
+
 int
 cfc_put_eol_n(struct cf_buffer_t *buf, size_t n)
 {
