@@ -104,9 +104,3 @@ cfc_put_rle(struct cf_buffer_t *buf, int rle, int color)
 
         return 0;
 }
-
-void
-cfc_byte_align(struct cf_buffer_t *buf)
-{
-        buf->pos = (buf->pos + 7) & ~7;
-}

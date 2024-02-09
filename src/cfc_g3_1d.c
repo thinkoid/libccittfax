@@ -60,7 +60,7 @@ cfc_do_g3_1d(struct cf_buffer_t *dst, struct cf_buffer_t *src,
                         goto err;
 
                 /* source row always starts at a byte boundary */
-                cfc_byte_align(src);
+                cf_byte_align(src);
 
                 if (params->end_of_line && cfc_put_eol(dst))
                         goto err;

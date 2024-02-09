@@ -154,3 +154,7 @@ void cf_setbits(char *buf, size_t beg, size_t end, int color)
                 cf_setbits_black(buf, beg, end);
 }
 
+void cf_byte_align(struct cf_buffer_t *buf)
+{
+        buf->pos = (buf->pos + 7) & ~7;
+}

@@ -7,12 +7,7 @@
 
 #include <ccittfax/ccittfax.h>
 
-static inline int
-get_color(const char *arr, size_t pos)
-{
-        /* Convention is: 0 is white, 1 is black */
-        return (unsigned char)arr[pos >> 3] & (0x80 >> (pos & 7));
-}
+#include "../src/cf.h"
 
 static int
 find_changing(const char *buf, int pos, int endpos)
@@ -22,10 +17,10 @@ find_changing(const char *buf, int pos, int endpos)
         if (pos < 0)
                 pos = 0;
         else
-                color = get_color(buf, pos);
+                color = cf_get_color(buf, pos);
 
         for(; pos < endpos; ++pos) {
-                if (color != get_color(buf, pos))
+                if (color != cf_get_color(buf, pos))
                         return pos;
         }
 

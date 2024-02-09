@@ -175,7 +175,7 @@ cfd_g3_1d_decode_newline(struct cf_state_t *state)
         if (fill(dst, params->columns - state->a0, params->black_is_1))
                 return 1;
 
-        cfc_byte_align(dst);
+        cf_byte_align(dst);
 
         if (try_get_eob_tail(src))
                 return 0;
@@ -185,7 +185,7 @@ cfd_g3_1d_decode_newline(struct cf_state_t *state)
                         state->params->columns, state->a0);
 
         if (state->params->encoded_byte_align)
-                cfc_byte_align(state->src);
+                cf_byte_align(state->src);
 
         state->a0 = 0;
         state->color = 1;

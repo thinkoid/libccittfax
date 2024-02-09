@@ -24,7 +24,4 @@ cfc_put_eol_1(struct cf_buffer_t *buf);
 int
 cfc_put_rle(struct cf_buffer_t *dst, int rle, int color);
 
-void
-cfc_byte_align(struct cf_buffer_t *buf);
-
 #endif /* CCITTFAX_SRC_CFC_COMMON_H */

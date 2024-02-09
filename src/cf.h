@@ -101,4 +101,6 @@ cf_resize_buffer(struct cf_buffer_t *cf_buf);
 struct cf_buffer_t *
 cf_make_buffer();
 
+void cf_byte_align(struct cf_buffer_t *buf);
+
 #endif /* CCITTFAX_SRC_CF_H */
