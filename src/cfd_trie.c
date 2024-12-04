@@ -494,6 +494,7 @@ cfd_trie_is_terminal(struct cfd_trie_state_t *state)
 void
 cfd_trie_get_value(struct cfd_trie_state_t *state, int *value)
 {
+        /* TODO: change to return value */
         const union cfd_trie_any_t *trie;
 
         assert(state);
