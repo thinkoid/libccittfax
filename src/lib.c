@@ -2,7 +2,9 @@
 
 #include <ccittfax/ccittfax.h>
 
+#define STR_(x) #x
+
 const char *version()
 {
-        return VERSION;
+        return STR_(VERSION);
 }

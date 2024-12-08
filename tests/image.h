@@ -5,6 +5,7 @@
 
 #include <ccittfax/defs.h>
 
+#include <math.h>
 #include <stdio.h>
 
 char *load_image(FILE *pf, int *w, int *h);
