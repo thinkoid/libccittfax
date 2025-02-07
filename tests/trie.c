@@ -53,7 +53,7 @@ static void
 test_white_rle(const struct cfc_code_t *code, int i)
 {
         union {
-                unsigned char c[4];
+                char c[4];
                 unsigned int u;
         } buf = { 0 };
 
