@@ -27,7 +27,7 @@ static inline unsigned to_big_endian(unsigned x) {
 static int
 get_rle(const char *buf, size_t len, int color)
 {
-        int c, rle;
+        int c;
         size_t pos;
 
         struct cfd_trie_state_t state;
@@ -41,8 +41,7 @@ get_rle(const char *buf, size_t len, int color)
                 ++pos;
 
                 if (cfd_trie_is_terminal(&state)) {
-                        cfd_trie_get_value(&state, &rle);
-                        return rle;
+                        return cfd_trie_get_value(&state);
                 }
         }
 

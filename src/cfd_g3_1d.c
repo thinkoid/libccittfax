@@ -18,7 +18,7 @@ struct cf_state_t {
 static int
 do_get_rle(struct cf_buffer_t *cf_buf, int color)
 {
-        int c, rle;
+        int c;
         size_t endpos;
 
         struct cfd_trie_state_t state;
@@ -31,10 +31,8 @@ do_get_rle(struct cf_buffer_t *cf_buf, int color)
 
                 ++cf_buf->pos;
 
-                if (cfd_trie_is_terminal(&state)) {
-                        cfd_trie_get_value(&state, &rle);
-                        return rle;
-                }
+                if (cfd_trie_is_terminal(&state))
+                        return cfd_trie_get_value(&state);
         }
 
         return -2;
