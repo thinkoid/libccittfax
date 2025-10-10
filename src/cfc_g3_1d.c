@@ -36,7 +36,9 @@ cfc_g3_1d_line(struct cf_buffer_t *dst, struct cf_buffer_t *src,
         assert(endpos <= (src->cap << 3));
 
         for (color = 1; src->pos < endpos; color = !color) {
-                int rle = get_rle(src->buf, src->pos, endpos, color);
+                int rle = get_rle(
+                        src->buf, src->pos, endpos,
+                        params->black_is_1 ? !color : color);
 
                 if (cfc_put_rle(dst, rle, color))
                         return 1;
@@ -53,7 +55,8 @@ cfc_do_g3_1d(struct cf_buffer_t *dst, struct cf_buffer_t *src,
 {
         int i;
 
-        cfc_put_eol(dst);
+        if (params->end_of_line)
+                cfc_put_eol(dst);
 
         for (i = 0; i < params->rows; ++i) {
                 if (cfc_g3_1d_line(dst, src, params))
@@ -88,7 +91,7 @@ cfc_g3_1d(const char *buf, struct cf_params_t *params)
         struct cf_buffer_t src, *dst;
 
         src.buf = (char *)buf;
-        src.cap = params->rows * ((params->columns + 7) & ~7);
+        src.cap = params->rows * ((params->columns + 7) >> 3);
         src.pos = 0;
 
         dst = cf_make_buffer();
