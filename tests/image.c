@@ -13,6 +13,7 @@ static char *to_1bpp(char *src, int w, int h)
         int i, j, len;
         char *dst, *pcur;
 
+        /* 1bpp image lines are padded to next byte boundary */
         len = h * ((w + 7) / 8);
 
         dst = malloc(len);
