@@ -1,11 +1,9 @@
-/Makefile
-/include/Makefile
 /include/ccittfax/_config.h
-/src/Makefile
-/tests/Makefile
 /tests/test
 /tests/mkbmp
 /tests/cfd
 /tests/cfc
 /tests/change
 /tests/trie
+/utils/generate_trie
+/utils/mkbmp

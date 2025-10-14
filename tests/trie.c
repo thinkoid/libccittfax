@@ -80,7 +80,7 @@ test_white()
 }
 
 int
-main(int argc, char **argv)
+main()
 {
         test_white();
         return 0;
