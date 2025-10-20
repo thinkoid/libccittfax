@@ -227,7 +227,7 @@ cfd_g3_1d(const char *buf, size_t len, struct cf_params_t *params)
         if (0 == dst)
                 return 0;
 
-        state = (struct cf_state_t){ &src, dst, params, 0, 0, 0, 0, 0, 0 };
+        state = (struct cf_state_t){ &src, dst, params, 0, 0, 0, 0, 0, 1 };
 
         try_get_eol(&src);
         for (; src.pos < (src.cap << 3); ) {

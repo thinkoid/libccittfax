@@ -7,3 +7,7 @@
 /tests/trie
 /utils/generate_trie
 /utils/mkbmp
+/tests/test.ccitt
+/tests/test.deccitt
+/tests/out.bmp
+/tests/test-1bpp.bmp
