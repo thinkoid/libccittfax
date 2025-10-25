@@ -32,8 +32,9 @@ parse_args(int argc, char **argv, struct cf_params_t *params)
                         perror("malloc");
                         return 0;
                 }
-                *params = (struct cf_params_t){ 0, 0, 0, 0, 0, 1, 0, 0 };
         }
+
+        *params = (struct cf_params_t){ 0, 0, 0, 0, 0, 1, 0, 0 };
 
         while ((opt = getopt(argc, argv, "k:alebd:")) != -1) {
                 switch (opt) {
@@ -82,7 +83,7 @@ int main(int argc, char **argv)
         char *src;
         struct cf_buffer_t *dst;
 
-        struct cf_params_t params = { 0, 0, 0, 1728, 0, 1, 0, 0 };
+        struct cf_params_t params;
         parse_args(argc, argv, &params);
 
         src = load_image(stdin, &params.columns, &params.rows);
@@ -90,6 +91,15 @@ int main(int argc, char **argv)
                 fprintf(stderr, "stbi_load failed\n");
                 return 1;
         }
+
+        fprintf(stderr, "  k                  : %d\n", params.k);
+        fprintf(stderr, "  end_of_line        : %d\n", params.end_of_line);
+        fprintf(stderr, "  encoded_byte_align : %d\n", params.encoded_byte_align);
+        fprintf(stderr, "  columns            : %d\n", params.columns);
+        fprintf(stderr, "  rows               : %d\n", params.rows);
+        fprintf(stderr, "  end_of_block       : %d\n", params.end_of_block);
+        fprintf(stderr, "  black_is_1         : %d\n", params.black_is_1);
+        fprintf(stderr, "  damage_limit       : %d\n", params.damage_limit);
 
         dst = cfc(src, &params);
         if (0 == dst) {
