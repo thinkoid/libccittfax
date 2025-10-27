@@ -96,6 +96,9 @@ void cf_setbit(char *buf, size_t pos, int value);
 void cf_setbits(char *buf, size_t beg, size_t end, int color);
 
 struct cf_buffer_t *
+cf_resize_buffer_explicit(struct cf_buffer_t *cf_buf, size_t cap);
+
+struct cf_buffer_t *
 cf_resize_buffer_least(struct cf_buffer_t *cf_buf, size_t add);
 
 struct cf_buffer_t *

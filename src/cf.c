@@ -40,7 +40,7 @@ cf_new_capacity(size_t cap, size_t size, size_t add)
         return cap;
 }
 
-static struct cf_buffer_t *
+struct cf_buffer_t *
 cf_resize_buffer_explicit(struct cf_buffer_t *cf_buf, size_t cap)
 {
         char *buf;
