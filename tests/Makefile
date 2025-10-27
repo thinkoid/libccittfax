@@ -9,7 +9,7 @@ LIBS = $(TOPDIR)/src/libccittfax.a
 SRCS = $(wildcard *.c)
 OBJS = $(patsubst %.c,%.o,$(SRCS))
 
-TARGETS = cfc cfd change trie
+TARGETS = cf cfc cfd change trie
 
 DEPENDDIR := ./.deps
 DEPENDFLAGS = -M
@@ -42,6 +42,9 @@ change: change.o $(LIBS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 trie: trie.o $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $^
+
+%: %.o $(LIBS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 %.o: %.c
