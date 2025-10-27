@@ -4,6 +4,7 @@ CURDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 TOPDIR := $(abspath $(CURDIR)/..)
 include $(TOPDIR)/Makefile.common
 
+CFLAGS := $(CFLAGS) -Wno-format-zero-length -Wno-unused-function
 LIBS = $(TOPDIR)/src/libccittfax.a
 
 SRCS = $(wildcard *.c)
