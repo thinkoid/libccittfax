@@ -90,4 +90,16 @@ make_test(struct test_t *p, const char *name)
                 printf("\n\n");       \
         } while (0)
 
+static inline void
+dump_buffer(const char *buf, size_t n)
+{
+        printf("## buffer dump:\n## ");
+        for(size_t i = 0; i < n; i++) {
+                if (i && 0 == i % 16)
+                        printf("\n## ");
+                printf(" %02X ", ((unsigned char *)buf)[i]);
+        }
+        printf("\n## \n");
+}
+
 #endif /* LIBCCITTFAX_TEST_TEST_H */

@@ -53,18 +53,6 @@ test_buffer_color(struct test_t *test,
 }
 
 static void
-dump_buffer(const char *pbuf, size_t cap)
-{
-        printf("## buffer dump:\n## ");
-        for(size_t i = 0; i < cap; i++) {
-                if (i && 0 == i % 16)
-                        printf("\n##  ");
-                printf(" %02X ", ((unsigned char *)pbuf)[i]);
-        }
-        printf("\n## \n");
-}
-
-static void
 do_test_resize_buffer(struct test_t *test, size_t cap, size_t pos,
                       int resized)
 {
