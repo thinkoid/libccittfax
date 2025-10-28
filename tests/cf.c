@@ -192,7 +192,7 @@ test_setbits(struct test_t *test)
 int main()
 {
         static struct test_t test;
-        make_test(&test, "internal helper API test");
+        make_test(&test, "cf.c internal API test");
 
         test_buffer(&test);
         test_byte_align(&test);
