@@ -31,8 +31,8 @@ test_make_buffer(struct test_t *test)
 }
 
 static void
-test_buffer_color(struct test_t *test, const char *buf, size_t beg, size_t end,
-                  int color)
+do_test_buffer_color(struct test_t *test, const char *buf, size_t beg,
+                     size_t end, int color)
 {
         for(size_t pos = beg; pos < end; pos++) {
                 int actual_color = cf_getbit(buf, pos);
@@ -40,6 +40,16 @@ test_buffer_color(struct test_t *test, const char *buf, size_t beg, size_t end,
                      "expected bit color %d at position %lu: got %d",
                      color, pos, actual_color);
         }
+}
+
+static void
+test_buffer_color(struct test_t *test,
+                  const char *buf, size_t cap, size_t beg, size_t end,
+                  int color)
+{
+        do_test_buffer_color(test, buf,   0, beg, !color);
+        do_test_buffer_color(test, buf, beg, end, color);
+        do_test_buffer_color(test, buf, end, cap << 3, !color);
 }
 
 static void
@@ -82,8 +92,8 @@ do_test_resize_buffer(struct test_t *test, size_t cap, size_t pos,
         TEST(test, pos == resized_cf_buffer->pos);
 
         if(resized) {
-                test_buffer_color(test, resized_cf_buffer->buf, 0, pos, 1);
-                test_buffer_color(test, resized_cf_buffer->buf, pos, cap << 3, 0);
+                test_buffer_color(test, resized_cf_buffer->buf, cap,   0,      pos, 1);
+                test_buffer_color(test, resized_cf_buffer->buf, cap, pos, cap << 3, 0);
         }
 
         free(resized_cf_buffer->buf);
@@ -101,6 +111,8 @@ static void
 test_resize_buffer(struct test_t *test)
 {
         const size_t max_cap = 64;
+
+        NOTE("testing cf_resize_buffer");
         for(size_t cap = 1; cap < max_cap; cap++) {
                 const size_t max_pos = cap << 3;
                 for(size_t pos = 0; pos < max_pos; pos++) {
@@ -118,12 +130,73 @@ test_buffer(struct test_t *test)
         test_resize_buffer(test);
 }
 
+static void
+test_byte_align(struct test_t *test)
+{
+        struct cf_buffer_t cf_buffer = { 0, 0, 0 };
+
+        char buf[8] = { 0 };
+
+        NOTE("testing cf_byte_align");
+        cf_buffer.buf = buf;
+        cf_buffer.cap = sizeof(buf);
+
+        cf_byte_align(&cf_buffer);
+        TEST(test, 0 == cf_buffer.pos);
+
+        for(size_t i = 1; i < sizeof(char) << 3; i++) {
+                cf_buffer.pos = i;
+                cf_byte_align(&cf_buffer);
+                TEST(test, 8 == cf_buffer.pos);
+        }
+
+        cf_buffer.pos = 9;
+        cf_byte_align(&cf_buffer);
+        TEST(test, 16 == cf_buffer.pos);
+}
+
+static void
+do_test_setbits(struct test_t *test, int color)
+{
+        size_t beg, end;
+
+        char buf[8] = { 0 };
+        memset(buf, color ? 0 : -1, sizeof buf);
+
+        for(end = 1; end < 13; end++) {
+                cf_setbits(buf, 0, end, color);
+                test_buffer_color(test, buf, sizeof buf, 0, end, color);
+                memset(buf, color ? 0 : -1, sizeof buf);
+        }
+
+        for(beg = 0; end < (sizeof(buf) << 3); beg++, end++) {
+                cf_setbits(buf, beg, end, color);
+                test_buffer_color(test, buf, sizeof buf, beg, end, color);
+                memset(buf, color ? 0 : -1, sizeof buf);
+        }
+
+        for(; beg < (sizeof(buf) << 3); beg++) {
+                cf_setbits(buf, beg, end, color);
+                test_buffer_color(test, buf, sizeof buf, beg, end, color);
+                memset(buf, color ? 0 : -1, sizeof buf);
+        }
+}
+
+static void
+test_setbits(struct test_t *test)
+{
+        do_test_setbits(test, 0);
+        do_test_setbits(test, 1);
+}
+
 int main()
 {
         static struct test_t test;
         make_test(&test, "internal helper API test");
 
         test_buffer(&test);
+        test_byte_align(&test);
+        test_setbits(&test);
 
         return !!test.failed;
 }
