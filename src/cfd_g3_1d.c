@@ -45,15 +45,15 @@ do_get_rle(struct cf_buffer_t *cf_buf, int color)
 static int
 get_rle(struct cf_buffer_t *cf_buf, int color)
 {
-        int rle, tail;
+        int rle, total = 0;
 
-        rle = do_get_rle(cf_buf, color);
-        if (rle >= 64) {
-                tail = do_get_rle(cf_buf, color);
-                return 0 <= tail ? rle + tail : -2;
-        }
+        do {
+                if(0 > (rle = do_get_rle(cf_buf, color)))
+                        return rle;
+                total += rle;
+        } while(rle >= 64);
 
-        return rle;
+        return total;
 }
 
 static inline int
