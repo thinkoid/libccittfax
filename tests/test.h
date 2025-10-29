@@ -79,15 +79,15 @@ make_test(struct test_t *p, const char *name)
 #define NOTE(x)                       \
         do {                          \
                 printf("\n# Note: "); \
-                printf(x);            \
-                printf("\n\n");       \
+                printf x;             \
+                printf("\n");         \
         } while (0)
 
 #define STEP(x)                       \
         do {                          \
                 printf("\n# Step: "); \
                 printf x;             \
-                printf("\n\n");       \
+                printf("\n");         \
         } while (0)
 
 static inline void
