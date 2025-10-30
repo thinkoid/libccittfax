@@ -15,7 +15,7 @@ test_make_buffer(struct test_t *test)
 {
         struct cf_buffer_t *cf_buffer = cf_make_buffer();
 
-        NOTE("testing cf_make_buffer");
+        NOTE(("testing cf_make_buffer"));
 
         TEST(test, 0 != cf_buffer);
         TEST(test, 0 != cf_buffer->buf);
@@ -100,7 +100,7 @@ test_resize_buffer(struct test_t *test)
 {
         const size_t max_cap = 64;
 
-        NOTE("testing cf_resize_buffer");
+        NOTE(("testing cf_resize_buffer"));
         for(size_t cap = 1; cap < max_cap; cap++) {
                 const size_t max_pos = cap << 3;
                 for(size_t pos = 0; pos < max_pos; pos++) {
@@ -125,7 +125,7 @@ test_byte_align(struct test_t *test)
 
         char buf[8] = { 0 };
 
-        NOTE("testing cf_byte_align");
+        NOTE(("testing cf_byte_align"));
         cf_buffer.buf = buf;
         cf_buffer.cap = sizeof(buf);
 
