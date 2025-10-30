@@ -14,3 +14,9 @@
 /tests/.gdb_history
 /tests/cf
 /tests/cfc_common
+/tests/test_cf_buffer
+/tests/test_cf_byte_align
+/tests/test_cf_find_changing
+/tests/test_cf_get_color
+/tests/test_cf_new_capacity
+/tests/test_cf_setbits

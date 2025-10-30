@@ -6,7 +6,7 @@
 #include <string.h>
 
 #include <ccittfax/ccittfax.h>
-#include "../src/cf.h"
+#include "../src/cf.c"
 
 #include "./test.h"
 
@@ -144,7 +144,7 @@ test_byte_align(struct test_t *test)
 }
 
 static void
-do_test_setbits(struct test_t *test, int color)
+do_test_cf_setbits(struct test_t *test, int color)
 {
         size_t beg, end;
 
@@ -171,20 +171,19 @@ do_test_setbits(struct test_t *test, int color)
 }
 
 static void
-test_setbits(struct test_t *test)
+test_cf_setbits(struct test_t *test)
 {
-        do_test_setbits(test, 0);
-        do_test_setbits(test, 1);
+        do_test_cf_setbits(test, 0);
+        do_test_cf_setbits(test, 1);
 }
+
 
 int main()
 {
         static struct test_t test;
-        make_test(&test, "cf.c internal API test");
+        make_test(&test, "cf_setbits internal API test");
 
-        test_buffer(&test);
-        test_byte_align(&test);
-        test_setbits(&test);
+        test_cf_setbits(&test);
 
         return !!test.failed;
 }
