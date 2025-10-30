@@ -50,6 +50,8 @@ test_new_capacity(struct test_t *test)
         TEST(test, cf_new_capacity(X - 1, X - 1, 1) == X);
 
         TEST(test, 0 == cf_new_capacity(X - 1, X - 1, 2));
+
+        TEST(test, cf_new_capacity(H/2, H/2, X) == 0);
 }
 
 int main()
