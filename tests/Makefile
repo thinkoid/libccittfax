@@ -16,6 +16,7 @@ TARGETS = cfc cfd change trie					\
 	test_cf_find_changing						\
 	test_cf_get_color							\
 	test_cf_new_capacity						\
+	test_cf_setbit								\
 	test_cf_setbits
 
 DEPENDDIR := ./.deps

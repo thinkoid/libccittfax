@@ -147,7 +147,9 @@ int cf_getbit(const char *buf, size_t pos)
 
 void cf_setbit(char *buf, size_t pos, int value)
 {
-        *((uint8_t *)buf + (pos / 8)) |= (uint8_t)(!!value) << (7 - (pos & 7));
+        unsigned char *p = (unsigned char *)buf + (pos >> 3);
+        unsigned char m = 0x80 >> (pos & 7);
+        *p = value ? *p | m : *p & ~m;
 }
 
 void cf_setbits(char *buf, size_t beg, size_t end, int color)

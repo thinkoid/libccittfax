@@ -20,3 +20,4 @@
 /tests/test_cf_get_color
 /tests/test_cf_new_capacity
 /tests/test_cf_setbits
+/tests/test_cf_setbit
