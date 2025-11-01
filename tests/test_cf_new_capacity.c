@@ -10,48 +10,55 @@
 
 #include "./test.h"
 
+#define X  ((size_t)-1)
+#define H  ((X >> 1) + 1)
+
 static void
 test_new_capacity(struct test_t *test)
 {
         NOTE(("testing cf_new_capacity (fixed cases)"));
 
-        const size_t X = (size_t)-1;
-        const size_t H = (X >> 1) + 1;
+        static const struct {
+                size_t cap, size, add, expected;
+        } arr[] = {
+                { 8, 1, 2,  8 },
+                { 8, 2, 2,  8 },
+                { 8, 3, 2,  8 },
+                { 8, 4, 2,  8 },
+                { 8, 5, 2,  8 },
+                { 8, 6, 2,  8 },
+                { 8, 7, 2, 16 },
 
-        /* zero-cap rule */
-        TEST(test, cf_new_capacity(0, 0, 4) == 4);
+                { H - 1, H - 1, 1, ((H - 1) << 1) },
+                { H,     H - 1, 1,   H },
 
-        /* no-resize when enough room */
-        TEST(test, cf_new_capacity(32, 24,  1) == 32);
-        TEST(test, cf_new_capacity(32, 24,  2) == 32);
-        TEST(test, cf_new_capacity(32, 24,  3) == 32);
-        TEST(test, cf_new_capacity(32, 24,  4) == 32);
-        TEST(test, cf_new_capacity(32, 24,  5) == 32);
-        TEST(test, cf_new_capacity(32, 24,  6) == 32);
-        TEST(test, cf_new_capacity(32, 24,  7) == 32);
-        TEST(test, cf_new_capacity(32, 24,  8) == 32);
+                { H,     H, H, 0 },
 
-        /* yes-resize when not enough room */
-        TEST(test, cf_new_capacity(32, 24,  9) == 64);
-        TEST(test, cf_new_capacity(32, 24, 10) == 64);
+                { H,     H - 1, 2, H + ((X - H) >> 1) },
+                { H,     H - 1, 3, H + ((X - H) >> 1) },
+                { H,     H - 1, 4, H + ((X - H) >> 1) },
 
-        TEST(test, cf_new_capacity( 32,  32,  1) ==  64);
-        TEST(test, cf_new_capacity( 64,  64,  1) == 128);
-        TEST(test, cf_new_capacity(128, 128,  1) == 256);
+                { X - 8,      X - 8,      1,  (X - 4) },
+                { X - 7,      X - 8,      2,  (X - 4) },
+                { X - 6,      X - 8,      3,  (X - 3) },
+                { X - 5,      X - 8,      4,  (X - 3) },
+                { X - 4,      X - 8,      5,  (X - 2) },
+                { X - 3,      X - 8,      6,  (X - 2) },
+                { X - 2,      X - 8,      7,  (X - 1) },
+                { X - 1,      X - 8,      8,  X },
+                { X,          X,          1,  0 }
+        };
 
-        /* boundary around H */
-        TEST(test, cf_new_capacity(H - 1, H - 1, 1) == (H - 1) << 1);
-        TEST(test, cf_new_capacity(H, H, 1) == (H + ((X - H) >> 1)));
-        TEST(test, cf_new_capacity(H + H/2, H + H/2, 1) ==
-             (H + H / 2) + ((X - H - H/2) >> 1));
+        for(size_t i = 0; i < sizeof arr / sizeof *arr; i++) {
+                size_t cap, size, add, expected;
 
-        /* boundary around X */
-        TEST(test, cf_new_capacity(X - 2, X - 2, 1) == X - 1);
-        TEST(test, cf_new_capacity(X - 1, X - 1, 1) == X);
+                cap      = arr[i].cap;
+                size     = arr[i].size;
+                add      = arr[i].add;
+                expected = arr[i].expected;
 
-        TEST(test, 0 == cf_new_capacity(X - 1, X - 1, 2));
-
-        TEST(test, cf_new_capacity(H/2, H/2, X) == 0);
+                TEST(test, expected == cf_new_capacity(cap, size, add));
+        }
 }
 
 int main()
