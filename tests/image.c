@@ -34,7 +34,8 @@ static char *to_1bpp(char *src, int w, int h)
         return dst;
 }
 
-char *load_image(FILE *pf, int *w, int *h)
+static char *
+do_load_image(FILE *pf, int *w, int *h)
 {
         int ncomp;
         char *src, *pbuf;
@@ -49,6 +50,28 @@ char *load_image(FILE *pf, int *w, int *h)
 
         pbuf = to_1bpp(src, *w, *h);
         free(src);
+
+        return pbuf;
+}
+
+char *
+load_image(const char *filename, int *w, int *h)
+{
+        char *pbuf;
+        FILE *pf;
+
+        pf = filename && filename[0]
+                ? fopen(filename, "rb") : freopen(0, "rb", stdin);
+
+        if (0 == pf) {
+                perror("fopen");
+                return 0;
+        }
+
+        pbuf = do_load_image(pf, w, h);
+
+        if (pf != stdin)
+                fclose(pf);
 
         return pbuf;
 }

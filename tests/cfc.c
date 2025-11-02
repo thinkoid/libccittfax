@@ -86,7 +86,10 @@ int main(int argc, char **argv)
         struct cf_params_t params;
         parse_args(argc, argv, &params);
 
-        src = load_image(stdin, &params.columns, &params.rows);
+        src = load_image(
+                optind < argc ? argv[argc - 1] : 0,
+                &params.columns, &params.rows);
+
         if (0 == src) {
                 fprintf(stderr, "stbi_load failed\n");
                 return 1;

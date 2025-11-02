@@ -8,6 +8,6 @@
 #include <math.h>
 #include <stdio.h>
 
-char *load_image(FILE *pf, int *w, int *h);
+char *load_image(const char *filename, int *w, int *h);
 
 #endif /* CCITTFAX_TESTS_FILE_H */
