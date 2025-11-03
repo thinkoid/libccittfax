@@ -13,10 +13,10 @@ static void usage()
         fprintf(stderr, "\nOptions\n");
         fprintf(stderr, "    -k number : encoding (negative is Group 4, "
                 "0 is Group 3 1D, positive is Group 3 2D)\n");
-        fprintf(stderr, "    -l        : EOL codes (default false)\n");
-        fprintf(stderr, "    -a        : byte-aligned lines (default false)\n");
+        fprintf(stderr, "    -l        : EOL present (default false)\n");
+        fprintf(stderr, "    -a        : encoded byte-aligned lines (default false)\n");
         fprintf(stderr, "    -e        : EOB present (default true)\n");
-        fprintf(stderr, "    -b        : black value is 1 (default false, black is 0)\n");
+        fprintf(stderr, "    -b        : black is 1 (default black is 0)\n");
         fprintf(stderr, "    -d number : DamagedRowsBeforeError (default k - 1)\n");
         exit(2);
 }
