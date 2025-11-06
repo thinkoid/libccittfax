@@ -13,17 +13,23 @@
 #include "cfc_tables.h"
 
 static inline int
-is_same_color(const char *arr, size_t pos, int color)
+is_same_color(const char *buf, size_t pos, int color)
 {
-        return color == !!((unsigned char)arr[pos >> 3] & (0x80 >> (pos & 7)));
+        return color == !!((unsigned char)buf[pos >> 3] & (0x80 >> (pos & 7)));
 }
 
-static int
-get_rle(const char *arr, size_t pos, size_t end, int color)
+static inline int
+get_rle(const char *buf, size_t pos, size_t end, int color)
 {
         size_t cur = pos;
-        for (; cur < end && is_same_color(arr, cur, color); ++cur) ;
+        for (; cur < end && is_same_color(buf, cur, color); ++cur) ;
         return cur - pos;
+}
+
+static inline int
+cfc_encoded_byte_align(struct cf_buffer_t *buf)
+{
+        return cfc_put_rle_explicit(buf, 0, (8 - (buf->pos & 7)) & 7);
 }
 
 int
@@ -53,24 +59,22 @@ static struct cf_buffer_t *
 cfc_do_g3_1d(struct cf_buffer_t *dst, struct cf_buffer_t *src,
              struct cf_params_t *params)
 {
-        int i;
+        for (int i = 0; i < params->rows; ++i) {
+                if (params->end_of_line && cfc_put_eol(dst)) {
+                        fprintf(stderr, "failed to emit EOL\n");
+                        goto err;
+                }
 
-        if (params->end_of_line)
-                cfc_put_eol(dst);
+                if (params->encoded_byte_align && cfc_encoded_byte_align(dst)) {
+                        fprintf(stderr, "failed to byte-align output\n");
+                        goto err;
+                }
 
-        for (i = 0; i < params->rows; ++i) {
                 if (cfc_g3_1d_line(dst, src, params))
                         goto err;
 
                 /* source row always starts at a byte boundary */
                 cf_byte_align(src);
-
-                if (params->end_of_line && cfc_put_eol(dst))
-                        goto err;
-
-                if (params->encoded_byte_align &&
-                    cfc_put_rle_explicit(dst, 0, (8 - (dst->pos & 7)) & 7))
-                        goto err;
         }
 
         if (params->end_of_block && cfc_put_eol_n(dst, 6))
