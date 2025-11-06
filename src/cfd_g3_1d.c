@@ -163,45 +163,45 @@ fill(struct cf_buffer_t *cf_buf, int n, int color)
 }
 
 static int
-cfd_g3_1d_line(struct cf_state_t *state)
+emit_run(struct cf_state_t *state, int rle)
 {
         struct cf_params_t *params = state->params;
 
-        struct cf_buffer_t *src = state->src;
-        struct cf_buffer_t *dst = state->dst;
+        if (state->a0 + rle > params->columns)
+                rle = params->columns - state->a0;
+
+        if (fill(state->dst, rle, state->color ^ params->black_is_1))
+                return 1;
+
+        state->a0 += rle;
+        return 0;
+}
+
+static int
+cfd_g3_1d_line(struct cf_state_t *state)
+{
+        struct cf_params_t *params = state->params;
 
         state->a0 = 0;
         state->color = 1;
 
         for (; state->a0 < params->columns; state->color = !state->color) {
-                int rle = get_rle(src, state->color);
-                if (0 > rle) {
-                        if (-2 == rle) {
-                                if (params->end_of_line)
-                                        skip_to_newline(src);
-                        }
+                int rle = get_rle(state->src, state->color);
+                if (rle < 0) {
+                        if (rle == -2 && params->end_of_line)
+                                skip_to_newline(state->src);
 
-                        if (fill(dst, params->columns - state->a0,
-                                 state->color ^ params->black_is_1))
+                        if (emit_run(state, params->columns - state->a0))
                                 return 1;
 
-                        if (-1 == rle)
-                                putback_eol(src);
+                        if (rle == -1)
+                                putback_eol(state->src);
 
                         break;
                 }
 
-                if (state->a0 + rle > params->columns) {
-                        /* truncate overflow */
-                        fprintf(stderr, "overflow: column: %d, rle: %d\n",
-                                state->a0, rle);
-                        rle = params->columns - state->a0;
-                }
-
-                if (fill(dst, rle, state->color ^ params->black_is_1))
+                if (emit_run(state, rle))
                         return 1;
-
-                state->a0 += rle;
         }
 
         return 0;
