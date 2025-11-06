@@ -111,8 +111,8 @@ int main(int argc, char **argv)
                 return 1;
         }
 
-        fprintf(stderr, " --> encoded : %p : %lu bits (unused: %lu)\n",
-                dst->buf, dst->pos, (dst->cap << 3) - dst->pos);
+        fprintf(stderr, " --> encoded : %lu bits (unused: %lu)\n",
+                dst->pos, (dst->cap << 3) - dst->pos);
 
         fwrite(&params, sizeof params, 1, stdout);
         fwrite((unsigned char *)dst->buf, (dst->pos + 7) >> 3, 1, stdout);
