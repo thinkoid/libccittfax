@@ -74,6 +74,17 @@ try_get_eol(struct cf_buffer_t *cf_buf)
 }
 
 static inline int
+putback_eol(struct cf_buffer_t *cf_buf)
+{
+        if (cf_buf->pos > 12) {
+                cf_buf->pos -= 12;
+                return 0;
+        }
+
+        return 1;
+}
+
+static inline int
 get_eob_tail(struct cf_buffer_t *cf_buf)
 {
         return  get_eol(cf_buf) &&
@@ -129,7 +140,8 @@ skip_to_newline(struct cf_buffer_t *cf_buf)
                 if (11 <= skip_zeroes(cf_buf)) {
                         if (cf_buf->pos < endpos)
                                 ++cf_buf->pos;
-
+                        /* stop before the newline */
+                        cf_buf->pos -= 12;
                         return;
                 }
         }
@@ -151,77 +163,57 @@ fill(struct cf_buffer_t *cf_buf, int n, int color)
 }
 
 static int
-cfd_g3_1d_decode_other(struct cf_state_t *state, int rle)
-{
-        if (fill(state->dst, rle, state->color ^ state->params->black_is_1))
-                return 1;
-
-        state->a0 += rle;
-        state->color = !state->color;
-
-        return 0;
-}
-
-static int
-cfd_g3_1d_decode_newline(struct cf_state_t *state)
+cfd_g3_1d_line(struct cf_state_t *state)
 {
         struct cf_params_t *params = state->params;
 
         struct cf_buffer_t *src = state->src;
         struct cf_buffer_t *dst = state->dst;
 
-        if (fill(dst, params->columns - state->a0, params->black_is_1))
-                return 1;
-
-        cf_byte_align(dst);
-
-        if (try_get_eob_tail(src))
-                return 0;
-
-        if (state->a0 < state->params->columns)
-                fprintf(stderr, "underflow: expected %d columns, got %d\n",
-                        state->params->columns, state->a0);
-
-        if (state->params->encoded_byte_align)
-                cf_byte_align(state->src);
-
         state->a0 = 0;
         state->color = 1;
+
+        for (; state->a0 < params->columns; state->color = !state->color) {
+                int rle = get_rle(src, state->color);
+                if (0 > rle) {
+                        if (-2 == rle) {
+                                if (params->end_of_line)
+                                        skip_to_newline(src);
+                        }
+
+                        if (fill(dst, params->columns - state->a0,
+                                 state->color ^ params->black_is_1))
+                                return 1;
+
+                        if (-1 == rle)
+                                putback_eol(src);
+
+                        break;
+                }
+
+                if (state->a0 + rle > params->columns) {
+                        /* truncate overflow */
+                        fprintf(stderr, "overflow: column: %d, rle: %d\n",
+                                state->a0, rle);
+                        rle = params->columns - state->a0;
+                }
+
+                if (fill(dst, rle, state->color ^ params->black_is_1))
+                        return 1;
+
+                state->a0 += rle;
+        }
 
         return 0;
 }
 
-static int
-cfd_g3_1d_decode(struct cf_state_t *state, int rle)
-{
-        struct cf_params_t *params = state->params;
-        struct cf_buffer_t *src = state->src;
-
-        switch (rle) {
-        case -1:
-                return cfd_g3_1d_decode_newline(state);
-
-        case -2:
-                skip_to_newline(src);
-                return cfd_g3_1d_decode(state, -1);
-
-        default:
-                if (state->a0 + rle > params->columns) {
-                        if (cfd_g3_1d_decode(state, params->columns - state->a0))
-                                return 1;
-
-                        return cfd_g3_1d_decode(state, -2);
-                }
-
-                return cfd_g3_1d_decode_other(state, rle);
-        }
-}
-
-struct cf_buffer_t *
+struct cf_buffer_t*
 cfd_g3_1d(const char *buf, size_t len, struct cf_params_t *params)
 {
-        struct cf_state_t state;
-        struct cf_buffer_t src = { (char *)buf, len, 0 }, *dst;
+        int line;
+
+        struct cf_state_t state = {0};
+        struct cf_buffer_t src = { (char*)buf, len, 0 }, *dst;
 
         dst = cf_make_buffer();
         if (0 == dst)
@@ -229,14 +221,29 @@ cfd_g3_1d(const char *buf, size_t len, struct cf_params_t *params)
 
         state = (struct cf_state_t){ &src, dst, params, 0, 0, 0, 0, 0, 1 };
 
-        try_get_eol(&src);
-        for (; src.pos < (src.cap << 3); ) {
-                if (cfd_g3_1d_decode(&state, get_rle(&src, state.color))) {
-                        free(dst->buf);
-                        free(dst);
-                        return 0;
+        for (line = 0; line < params->rows; line++) {
+                if (params->end_of_line && !get_eol(&src)) {
+                        fprintf(stderr, "missing EOL before line %d\n", line);
+                        goto err;
                 }
+
+                if (params->encoded_byte_align)
+                        cf_byte_align(&src);
+
+                if (cfd_g3_1d_line(&state)) {
+                        fprintf(stderr, "error decoding line %d\n", line);
+                        goto err;
+                }
+
+                cf_byte_align(dst);
         }
 
+        if (line >= params->rows &&
+            params->end_of_block && !get_eob_tail(&src)) {
+                fprintf(stderr, "missing EOB/RTC\n");
+                goto err;
+        }
+
+err:
         return dst;
 }
