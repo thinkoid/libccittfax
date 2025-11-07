@@ -10,7 +10,7 @@
 
 struct cf_state_t {
         struct cf_buffer_t *src, *dst;
-        struct cf_params_t *params;
+        const struct cf_params_t *params;
         int a0, a1, a2, b1, b2;
         int color;
 };
@@ -164,7 +164,7 @@ fill(struct cf_buffer_t *cf_buf, int n, int color)
 static int
 emit_run(struct cf_state_t *state, int rle)
 {
-        struct cf_params_t *params = state->params;
+        const struct cf_params_t *params = state->params;
 
         if (state->a0 + rle > params->columns)
                 rle = params->columns - state->a0;
@@ -179,7 +179,7 @@ emit_run(struct cf_state_t *state, int rle)
 static int
 cfd_g3_1d_line(struct cf_state_t *state)
 {
-        struct cf_params_t *params = state->params;
+        const struct cf_params_t *params = state->params;
 
         state->a0 = 0;
         state->color = 1;
