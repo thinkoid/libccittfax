@@ -10,15 +10,7 @@ LIBS = $(TOPDIR)/src/libccittfax.a
 SRCS = $(wildcard *.c)
 OBJS = $(patsubst %.c,%.o,$(SRCS))
 
-TARGETS = change trie                           \
-    test_cf_buffer                              \
-    test_cf_byte_align                          \
-    test_cf_find_changing                       \
-    test_cf_get_color                           \
-    test_cf_new_capacity                        \
-    test_cf_setbit                              \
-    test_cf_setbits                             \
-    test_skip_to_newline
+TARGETS = cfc cfd
 
 DEPENDDIR := ./.deps
 DEPENDFLAGS = -M
@@ -45,12 +37,6 @@ cfc: cfc.o image.o $(LIBS)
 	$(CC) $(LDFLAGS) -o $@ $^ -lm
 
 cfd: cfd.o file.o $(LIBS)
-	$(CC) $(LDFLAGS) -o $@ $^
-
-change: change.o $(LIBS)
-	$(CC) $(LDFLAGS) -o $@ $^
-
-trie: trie.o $(LIBS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 %: %.o $(LIBS)
