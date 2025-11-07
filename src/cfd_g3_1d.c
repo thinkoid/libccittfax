@@ -138,11 +138,10 @@ skip_to_newline(struct cf_buffer_t *cf_buf)
                 skip_ones(cf_buf);
 
                 if (11 <= skip_zeroes(cf_buf)) {
-                        if (cf_buf->pos < endpos)
-                                ++cf_buf->pos;
-                        /* stop before the newline */
-                        cf_buf->pos -= 12;
-                        return;
+                        if (cf_buf->pos < endpos) {
+                                cf_buf->pos -= 11;
+                                break;
+                        }
                 }
         }
 }
