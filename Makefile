@@ -1,9 +1,12 @@
-SUBDIRS = src utils tests
+SUBDIRS = src examples utils tests
 
-all: src
+all: src examples
 
 src:
 	$(MAKE) -C src
+
+examples:
+	$(MAKE) -C examples
 
 utils:
 	$(MAKE) -C utils
