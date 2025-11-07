@@ -21,3 +21,4 @@
 /tests/test_cf_new_capacity
 /tests/test_cf_setbits
 /tests/test_cf_setbit
+/tests/test_skip_to_newline
