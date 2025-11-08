@@ -187,13 +187,15 @@ cfd_g3_1d_line(struct cf_state_t *state)
         for (; state->a0 < params->columns; state->color = !state->color) {
                 int rle = get_rle(state->src, state->color);
                 if (rle < 0) {
-                        if (rle == -2 && params->end_of_line)
+                        if (rle == -2 /* && params->end_of_line */)
+                                /* always skip on error */
                                 skip_to_newline(state->src);
 
                         if (emit_run(state, params->columns - state->a0))
                                 return 1;
 
                         if (rle == -1)
+                                /* unexpected, early EOL */
                                 putback_eol(state->src);
 
                         break;
