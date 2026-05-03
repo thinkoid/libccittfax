@@ -8,5 +8,4 @@ AR = ar
 WARNINGS = -W -Wall -Wextra
 
 CFLAGS = -g -O $(WARNINGS) -Wno-implicit-fallthrough
-CPPFLAGS =  -I. -I../include
-
+CPPFLAGS =  -I. -I../include -I../third-party
