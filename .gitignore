@@ -24,3 +24,5 @@
 /tests/test_skip_to_newline
 /examples/cfc
 /examples/cfd
+/tests/test_cfd_g4
+/compile_commands.json
