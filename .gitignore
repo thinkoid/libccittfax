@@ -92,3 +92,7 @@ GRTAGS
 /examples/cfd
 /tests/test_cfd_g4
 /compile_commands.json
+/examples/compile_commands.json
+/src/compile_commands.json
+/tests/test_cfc_g4
+/utils/compile_commands.json

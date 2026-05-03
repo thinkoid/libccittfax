@@ -19,6 +19,7 @@ TARGETS = change trie                           \
     test_cf_setbit                              \
     test_cf_setbits                             \
     test_skip_to_newline                        \
+    test_cfc_g4                                 \
     test_cfd_g4
 
 DEPENDDIR := ./.deps
