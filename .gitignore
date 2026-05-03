@@ -88,6 +88,7 @@ GRTAGS
 /tests/test_cf_setbit
 /tests/test_cf_setbits
 /tests/test_skip_to_newline
-/tests/trie
-/utils/generate_trie
-/utils/mkbmp
+/examples/cfc
+/examples/cfd
+/tests/test_cfd_g4
+/compile_commands.json
