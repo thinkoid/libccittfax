@@ -19,7 +19,17 @@ ccittfax_sources = files(
 ccittfax_lib = static_library('ccittfax',
   ccittfax_sources,
   include_directories : inc_lib,
+  install : true,
   pic : false,
+)
+
+install_headers('../include/ccittfax.h')
+
+install_headers(
+  '../include/ccittfax/ccittfax.h',
+  '../include/ccittfax/config.h',
+  '../include/ccittfax/defs.h',
+  subdir : 'ccittfax',
 )
 
 ccittfax_dep = declare_dependency(

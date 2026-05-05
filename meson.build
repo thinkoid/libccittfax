@@ -15,10 +15,18 @@ add_project_arguments(
   language : 'c',
 )
 
-inc_lib      = include_directories('include')
+inc_lib        = include_directories('include')
 inc_thirdparty = include_directories('third-party')
 
 subdir('src')
+
+pkg = import('pkgconfig')
+pkg.generate(ccittfax_lib,
+  name        : 'ccittfax',
+  description : 'CCITT Group 3/4 fax codec library',
+  version     : meson.project_version(),
+)
+
 subdir('examples')
 subdir('utils')
 subdir('tests')
