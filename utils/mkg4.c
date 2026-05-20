@@ -1,7 +1,7 @@
 /* -*- mode: c; -*- */
 
 /*
- * mkpdf: read raw 1bpp image data (as produced by mkraw) and write a
+ * mkg4: read raw 1bpp image data (as produced by mkraw) and write a
  * minimal single-page PDF containing a G4-compressed image to stdout.
  *
  * Input format (from mkraw):
@@ -10,17 +10,49 @@
  *   char[]   1bpp packed pixels, top-down, rows byte-aligned
  *
  * Usage:
- *   mkraw input.bmp | mkpdf > output.pdf
- *   mkpdf input.raw > output.pdf
+ *   mkraw input.bmp | mkg4 > output.pdf
+ *   mkg4 input.raw > output.pdf
  */
 
 #include <ccittfax.h>
 
 #include <errno.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
+
+/*
+ * Byte counter for stdout — ftell(stdout) is unreliable when stdout
+ * is a pipe or a non-seekable file.  Track position manually.
+ */
+static size_t g_pos = 0;
+
+static int
+emit(const char *buf, size_t n)
+{
+        if (fwrite(buf, 1, n, stdout) != n)
+                return -1;
+        g_pos += n;
+        return 0;
+}
+
+static int
+emitf(const char *fmt, ...)
+{
+        char buf[4096];
+        int n;
+        va_list ap;
+
+        va_start(ap, fmt);
+        n = vsnprintf(buf, sizeof buf, fmt, ap);
+        va_end(ap);
+
+        if (n < 0 || (size_t)n >= sizeof buf)
+                return -1;
+
+        return emit(buf, n);
+}
 
 static char *
 read_stdin_or_file(const char *filename, size_t *len)
@@ -31,7 +63,7 @@ read_stdin_or_file(const char *filename, size_t *len)
 
         f = (filename && filename[0]) ? fopen(filename, "rb") : stdin;
         if (!f) {
-                fprintf(stderr, "mkpdf: open %s: %s\n",
+                fprintf(stderr, "mkg4: open %s: %s\n",
                         filename, strerror(errno));
                 return 0;
         }
@@ -41,7 +73,7 @@ read_stdin_or_file(const char *filename, size_t *len)
                         cap = cap ? cap * 2 : 0x4000;
                         char *tmp = realloc(buf, cap);
                         if (!tmp) {
-                                fprintf(stderr, "mkpdf: realloc: %s\n",
+                                fprintf(stderr, "mkg4: realloc: %s\n",
                                         strerror(errno));
                                 goto fail;
                         }
@@ -54,7 +86,7 @@ read_stdin_or_file(const char *filename, size_t *len)
         }
 
         if (ferror(f)) {
-                fprintf(stderr, "mkpdf: read error\n");
+                fprintf(stderr, "mkg4: read error\n");
                 goto fail;
         }
 
@@ -81,7 +113,8 @@ main(int argc, char **argv)
         struct cf_params_t params;
         struct cf_buffer_t *enc = 0;
         size_t stream_len;
-        long offsets[6], xref_offset;
+        size_t offsets[6];
+        size_t xref_offset;
         char content[256];
         int clen, i;
 
@@ -89,23 +122,23 @@ main(int argc, char **argv)
         if (!raw) return 1;
 
         if (rawlen < 2 * sizeof(int)) {
-                fprintf(stderr, "mkpdf: input too short\n");
+                fprintf(stderr, "mkg4: input too short\n");
                 goto fail;
         }
 
-        memcpy(&w, raw,                 sizeof w);
-        memcpy(&h, raw + sizeof(int),   sizeof h);
+        memcpy(&w, raw,               sizeof w);
+        memcpy(&h, raw + sizeof(int), sizeof h);
 
         row_bytes = (w + 7) / 8;
 
         if (rawlen < 2 * sizeof(int) + (size_t)(row_bytes * h)) {
-                fprintf(stderr, "mkpdf: input truncated "
+                fprintf(stderr, "mkg4: input truncated "
                         "(need %zu bytes, got %zu)\n",
                         2 * sizeof(int) + (size_t)(row_bytes * h), rawlen);
                 goto fail;
         }
 
-        fprintf(stderr, "mkpdf: image %d x %d, %d bytes raw\n",
+        fprintf(stderr, "mkg4: image %d x %d, %d bytes raw\n",
                 w, h, row_bytes * h);
 
         memset(&params, 0, sizeof params);
@@ -116,12 +149,12 @@ main(int argc, char **argv)
 
         enc = cfc(raw + 2 * sizeof(int), &params);
         if (!enc) {
-                fprintf(stderr, "mkpdf: cfc failed\n");
+                fprintf(stderr, "mkg4: cfc failed\n");
                 goto fail;
         }
 
         stream_len = (enc->pos + 7) >> 3;
-        fprintf(stderr, "mkpdf: encoded %zu bits (%zu bytes), ratio %.2f:1\n",
+        fprintf(stderr, "mkg4: encoded %zu bits (%zu bytes), ratio %.2f:1\n",
                 enc->pos, stream_len,
                 (double)(row_bytes * h) / stream_len);
 
@@ -134,67 +167,64 @@ main(int argc, char **argv)
          *   5 0 obj  content stream
          */
 
-#define EMIT(...) fprintf(stdout, __VA_ARGS__)
-#define TELL()    ftell(stdout)
+        emitf("%%PDF-1.4\n");
+        emitf("%%%c%c%c%c\n", 0xe2, 0xe3, 0xcf, 0xd3);
 
-        EMIT("%%PDF-1.4\n");
-        EMIT("%%%c%c%c%c\n", 0xe2, 0xe3, 0xcf, 0xd3);
+        offsets[1] = g_pos;
+        emitf("1 0 obj\n"
+              "<< /Type /Catalog /Pages 2 0 R >>\n"
+              "endobj\n");
 
-        offsets[1] = TELL();
-        EMIT("1 0 obj\n"
-             "<< /Type /Catalog /Pages 2 0 R >>\n"
-             "endobj\n");
+        offsets[2] = g_pos;
+        emitf("2 0 obj\n"
+              "<< /Type /Pages /Kids [ 3 0 R ] /Count 1 >>\n"
+              "endobj\n");
 
-        offsets[2] = TELL();
-        EMIT("2 0 obj\n"
-             "<< /Type /Pages /Kids [ 3 0 R ] /Count 1 >>\n"
-             "endobj\n");
+        offsets[3] = g_pos;
+        emitf("3 0 obj\n"
+              "<< /Type /Page /Parent 2 0 R\n"
+              "   /MediaBox [ 0 0 %d %d ]\n"
+              "   /Resources << /XObject << /Im1 4 0 R >> >>\n"
+              "   /Contents 5 0 R >>\n"
+              "endobj\n", w, h);
 
-        offsets[3] = TELL();
-        EMIT("3 0 obj\n"
-             "<< /Type /Page /Parent 2 0 R\n"
-             "   /MediaBox [ 0 0 %d %d ]\n"
-             "   /Resources << /XObject << /Im1 4 0 R >> >>\n"
-             "   /Contents 5 0 R >>\n"
-             "endobj\n", w, h);
-
-        offsets[4] = TELL();
-        EMIT("4 0 obj\n"
-             "<< /Type /XObject /Subtype /Image\n"
-             "   /Width %d /Height %d\n"
-             "   /ColorSpace /DeviceGray\n"
-             "   /BitsPerComponent 1\n"
-             "   /Filter /CCITTFaxDecode\n"
-             "   /DecodeParms << /K -1 /Columns %d /Rows %d"
-             " /EndOfBlock true >>\n"
-             "   /Length %zu >>\n"
-             "stream\n",
-             w, h, w, h, stream_len);
-        fwrite(enc->buf, 1, stream_len, stdout);
-        EMIT("\nendstream\nendobj\n");
+        offsets[4] = g_pos;
+        emitf("4 0 obj\n"
+              "<< /Type /XObject /Subtype /Image\n"
+              "   /Width %d /Height %d\n"
+              "   /ColorSpace /DeviceGray\n"
+              "   /BitsPerComponent 1\n"
+              "   /Filter /CCITTFaxDecode\n"
+              "   /DecodeParms << /K -1 /Columns %d /Rows %d"
+              " /EndOfBlock true >>\n"
+              "   /Length %zu >>\n"
+              "stream\n",
+              w, h, w, h, stream_len);
+        emit(enc->buf, stream_len);
+        emitf("\nendstream\nendobj\n");
 
         clen = snprintf(content, sizeof content,
                         "q %d 0 0 %d 0 0 cm /Im1 Do Q\n", w, h);
 
-        offsets[5] = TELL();
-        EMIT("5 0 obj\n"
-             "<< /Length %d >>\n"
-             "stream\n"
-             "%s"
-             "endstream\nendobj\n",
-             clen, content);
+        offsets[5] = g_pos;
+        emitf("5 0 obj\n"
+              "<< /Length %d >>\n"
+              "stream\n"
+              "%s"
+              "endstream\nendobj\n",
+              clen, content);
 
-        xref_offset = TELL();
-        EMIT("xref\n0 6\n");
-        EMIT("0000000000 65535 f \n");
+        xref_offset = g_pos;
+        emitf("xref\n0 6\n");
+        emitf("0000000000 65535 f \n");
         for (i = 1; i <= 5; ++i)
-                EMIT("%010ld 00000 n \n", offsets[i]);
+                emitf("%010zu 00000 n \n", offsets[i]);
 
-        EMIT("trailer\n"
-             "<< /Size 6 /Root 1 0 R >>\n"
-             "startxref\n%ld\n"
-             "%%%%EOF\n",
-             xref_offset);
+        emitf("trailer\n"
+              "<< /Size 6 /Root 1 0 R >>\n"
+              "startxref\n%zu\n"
+              "%%%%EOF\n",
+              xref_offset);
 
         free(enc->buf);
         free(enc);
