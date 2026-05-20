@@ -27,6 +27,6 @@ pkg.generate(ccittfax_lib,
   version     : meson.project_version(),
 )
 
-subdir('examples')
 subdir('utils')
+subdir('examples')
 subdir('tests')
