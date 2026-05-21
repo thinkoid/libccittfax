@@ -36,7 +36,7 @@ parse_args(int argc, char **argv, struct cf_params_t *params)
 
         *params = (struct cf_params_t){ 0, 0, 0, 0, 0, 1, 0, 0 };
 
-        while ((opt = getopt(argc, argv, "k:alebd:")) != -1) {
+        while ((opt = getopt(argc, argv, "hk:alebd:")) != -1) {
                 switch (opt) {
                 case 'k': /* compression type */
                         params->k = atol(optarg);
@@ -62,6 +62,7 @@ parse_args(int argc, char **argv, struct cf_params_t *params)
                         params->damage_limit = atol(optarg);
                         break;
 
+                case 'h':
                 default: /* '?' */
                         usage();
                 }
