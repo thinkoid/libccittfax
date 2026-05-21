@@ -325,6 +325,8 @@ cfd_g4(const char *src, size_t srclen, struct cf_params_t *params)
         char *ref;
         int line, row_bytes, rc;
 
+        const unsigned char white_byte = params->black_is_1 ? 0x00 : 0xff;
+
         if (!params || params->columns <= 0 || params->rows <= 0)
                 return 0;
 
@@ -345,7 +347,7 @@ cfd_g4(const char *src, size_t srclen, struct cf_params_t *params)
                 free(dst);
                 return 0;
         }
-        memset(ref, 0xff, row_bytes);
+        memset(ref, white_byte, row_bytes);
 
         for (line = 0; line < params->rows; ++line) {
                 size_t row_start = dst->pos;
@@ -373,7 +375,7 @@ cfd_g4(const char *src, size_t srclen, struct cf_params_t *params)
                                         ? written : (size_t)row_bytes;
                         memcpy(ref, dst->buf + (row_start >> 3), copy);
                         if (copy < (size_t)row_bytes)
-                                memset(ref + copy, 0xff, row_bytes - copy);
+                                memset(ref + copy, white_byte, row_bytes - copy);
                 }
         }
 
