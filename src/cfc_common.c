@@ -51,7 +51,7 @@ cfc_put_eol(struct cf_buffer_t *buf)
 static inline int
 cfc_put_eol_x(struct cf_buffer_t *buf, int x)
 {
-        return cfc_put_eol(buf) ? cfc_put_rle_explicit(buf, x, 1) : 1;
+        return cfc_put_eol(buf) ? 1 : cfc_put_rle_explicit(buf, x, 1);
 }
 
 int
