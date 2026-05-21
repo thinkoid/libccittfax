@@ -24,21 +24,19 @@ int
 main(int argc, char **argv)
 {
         const char *filename = argc > 1 ? argv[1] : 0;
-        int w, h, row_bytes;
-        char *pixels;
+        int w, h;
 
-        pixels = load_image(filename, &w, &h);
-        if (0 == pixels) {
+        char *buf = load_image(filename, &w, &h);
+        if (0 == buf) {
                 fprintf(stderr, "mkraw: failed to load image\n");
                 return 1;
         }
 
-        row_bytes = (w + 7) / 8;
+        fwrite(&w, sizeof w, 1, stdout);
+        fwrite(&h, sizeof h, 1, stdout);
 
-        fwrite(&w,      sizeof w, 1, stdout);
-        fwrite(&h,      sizeof h, 1, stdout);
-        fwrite(pixels,  row_bytes * h, 1, stdout);
+        fwrite(buf, h * ((w + 7) / 8), 1, stdout);
+        free(buf);
 
-        free(pixels);
         return 0;
 }
