@@ -51,7 +51,7 @@ parse_args(int argc, char **argv, struct cf_params_t *params)
                         break;
 
                 case 'e': /* EndOfBlock indicator */
-                        params->end_of_block = 1;
+                        params->end_of_block = 0;
                         break;
 
                 case 'b': /* BlackIsOne indicator, default false */
