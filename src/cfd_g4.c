@@ -272,8 +272,8 @@ cfd_g4_line(const char *ref, struct cf_buffer_t *dst,
         int a0 = -1;
         int color = 1; /* coding line starts white */
 
-        if (try_consume_eol(src) != 1 && params->end_of_line)
-                return 1;
+        if (params->end_of_line)
+                try_consume_eol(src);
 
         while (a0 < columns) {
                 int b1, b2, a1, rle;
