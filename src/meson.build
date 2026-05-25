@@ -3,6 +3,7 @@
 ccittfax_sources = files(
   'cf.c',
   'cfc.c',
+  'cfc_2d.c',
   'cfc_common.c',
   'cfc_g3_1d.c',
   'cfc_g3_2d.c',
