@@ -167,7 +167,7 @@ emit(struct cf_buffer_t *dst, int rle, int color, int black_is_1)
  * the next color transition starting at pos, or columns if none found.
  */
 static int
-find_b1(const char *ref, int a0, int color, int columns)
+find_b1(const char *ref, int a0, int color, int columns, int black_is_1)
 {
         int pos, ref_color;
 
@@ -175,7 +175,7 @@ find_b1(const char *ref, int a0, int color, int columns)
         if (pos >= columns)
                 return columns;
 
-        ref_color = cf_getbit(ref, pos);
+        ref_color = cf_getbit(ref, pos) ^ black_is_1;
 
         /* If the reference line at pos is already the opposite color, b1=pos */
         if (ref_color != color)
@@ -256,7 +256,7 @@ cfd_2d_line(const char *ref, struct cf_buffer_t *dst,
                         return 1;
 
                 case MODE_PASS:
-                        b1 = find_b1(ref, a0, color, columns);
+                        b1 = find_b1(ref, a0, color, columns, black_is_1);
                         b2 = find_b2(ref, b1, columns);
                         rle = b2 - (a0 < 0 ? 0 : a0);
                         if (emit(dst, rle, color, black_is_1))
@@ -295,7 +295,7 @@ cfd_2d_line(const char *ref, struct cf_buffer_t *dst,
                         static const int voffset[7] = { 0, 1, -1, 2, -2, 3, -3 };
                         int offset = voffset[mode - MODE_V0];
 
-                        b1 = find_b1(ref, a0, color, columns);
+                        b1 = find_b1(ref, a0, color, columns, black_is_1);
                         a1 = b1 + offset;
                         if (a1 < 0)       a1 = 0;
                         if (a1 > columns) a1 = columns;
