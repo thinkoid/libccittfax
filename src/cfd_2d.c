@@ -197,35 +197,6 @@ find_b2(const char *ref, int b1, int columns)
 }
 
 /*
- * Try to consume an EOL marker (twelve bits: 000000000001) from src.
- * Returns  1 if an EOL was consumed,
- *          0 if no EOL was present (src position unchanged),
- *         -1 on a partial / malformed sequence (src position unchanged).
- *
- * Implementation: peek bits one at a time; on mismatch roll back.
- */
-static int
-try_consume_eol(struct cf_buffer_t *src)
-{
-        size_t saved = src->pos;
-        int i, b;
-
-        for (i = 0; i < 11; ++i) {
-                b = get_bit(src);
-                if (b != 0) {
-                        src->pos = saved;
-                        return (b < 0) ? -1 : 0;
-                }
-        }
-        b = get_bit(src);
-        if (b != 1) {
-                src->pos = saved;
-                return (b < 0) ? -1 : 0;
-        }
-        return 1;
-}
-
-/*
  * Decode one G4 line into dst.
  * ref      : previous decoded scanline (bit-packed, columns wide), or an
  *            all-white imaginary line for the first row
@@ -239,9 +210,6 @@ cfd_2d_line(const char *ref, struct cf_buffer_t *dst,
         const int black_is_1 = params->black_is_1;
         int a0 = -1;
         int color = 1; /* coding line starts white */
-
-        if (params->end_of_line)
-                try_consume_eol(src);
 
         while (a0 < columns) {
                 int b1, b2, a1, rle;

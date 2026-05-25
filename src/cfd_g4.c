@@ -9,6 +9,34 @@
 #include "cf.h"
 #include "cfd_2d.h"
 
+
+static inline int
+get_bit(struct cf_buffer_t *src)
+{
+        if (src->pos >= (src->cap << 3))
+                return -1;
+        return cf_getbit(src->buf, src->pos++);
+}
+
+static void
+try_consume_eol(struct cf_buffer_t *src)
+{
+        size_t saved = src->pos;
+        int i, b;
+
+        for (i = 0; i < 11; ++i) {
+                b = get_bit(src);
+                if (b != 0) {
+                        src->pos = saved;
+                        return;
+                }
+        }
+
+        b = get_bit(src);
+        if (b != 1)
+                src->pos = saved;
+}
+
 /*
  * G4 (T.6 MMR) decoder.
  *
@@ -81,6 +109,9 @@ cfd_g4(const char *src, size_t srclen, struct cf_params_t *params)
 
                 if (params->encoded_byte_align)
                         sbuf.pos = (sbuf.pos + 7) & ~7;
+
+                if (params->end_of_line)
+                        try_consume_eol(&sbuf);
 
                 rc = cfd_2d_line(ref, dst, &sbuf, params);
                 if (rc == 2) {
