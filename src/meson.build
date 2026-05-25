@@ -9,6 +9,7 @@ ccittfax_sources = files(
   'cfc_g4.c',
   'cfc_tables.c',
   'cfd.c',
+  'cfd_2d.c',
   'cfd_g3_1d.c',
   'cfd_g3_2d.c',
   'cfd_g4.c',
