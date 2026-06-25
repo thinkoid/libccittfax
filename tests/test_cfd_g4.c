@@ -486,6 +486,62 @@ test_white_image(struct test_t *t)
 }
 
 /* ------------------------------------------------------------------ */
+/* Test: find_b1 must locate a changing element, not merely an         */
+/* opposite-colour pixel.                                              */
+/*                                                                     */
+/* Regression for a bug where find_b1 returned a0+1 whenever the       */
+/* reference pixel there was the opposite colour -- even when a0+1 lay */
+/* in the middle of an opposite-colour run (so a0+1 was not a colour   */
+/* transition).  b1 must be a changing element; the real one lies      */
+/* further right, and using a0+1 corrupted every subsequent line.      */
+/*                                                                     */
+/* 16 columns, 2 rows:                                                 */
+/*   row 0 = W4 B8 W4   (reference; H mode then a trailing V0)         */
+/*   row 1 = W4 B6 W6   (V0, VL2, V0)                                  */
+/*                                                                     */
+/* Decoding row 1, the final V0 calls find_b1 with a0 = 10 and coding  */
+/* colour white: ref[11] is black (opposite) but mid-run, so b1 must   */
+/* be 16 (no further black changing element), not 11.  With the bug    */
+/* the decoder mis-tracks and then errors on the row.                  */
+/* ------------------------------------------------------------------ */
+static void
+test_find_b1_changing_element(struct test_t *t)
+{
+        struct bits_t bs;
+        struct cf_params_t params;
+        struct cf_buffer_t *dst;
+        unsigned char expected[4] = { 0xF0, 0x0F, 0xF0, 0x3F };
+
+        NOTE(("test_find_b1_changing_element: b1 must be a changing element"));
+
+        bits_init(&bs);
+
+        /* row 0: H(white 4, black 8), then V0 for the trailing white 4 */
+        bits_put(&bs, 0x1, 3);   /* H           001     */
+        bits_put(&bs, 0xB, 4);   /* white run 4 1011    */
+        bits_put(&bs, 0x05, 6);  /* black run 8 000101  */
+        bits_put(&bs, 0x1, 1);   /* V0          1       */
+
+        /* row 1: V0, VL2, V0 */
+        bits_put(&bs, 0x1, 1);   /* V0          1       */
+        bits_put(&bs, 0x02, 6);  /* VL2         000010  */
+        bits_put(&bs, 0x1, 1);   /* V0          1       */
+
+        params = make_params(16, 2);
+        dst = cfd((const char *)bs.buf, bits_bytes(&bs), &params);
+
+        TEST(t, dst != 0, "decoder returned non-null");
+        if (dst) {
+                TEST(t, output_matches(dst, expected, 2, 16),
+                     "b1 changing-element row decoded correctly");
+                if (!output_matches(dst, expected, 2, 16))
+                        dump_buffer(dst->buf, (dst->pos + 7) >> 3);
+                free(dst->buf);
+                free(dst);
+        }
+}
+
+/* ------------------------------------------------------------------ */
 /* main                                                                */
 /* ------------------------------------------------------------------ */
 
@@ -502,6 +558,7 @@ main(void)
         test_eofb(&t);
         test_vr1_vl1(&t);
         test_white_image(&t);
+        test_find_b1_changing_element(&t);
 
         return t.failed ? 1 : 0;
 }

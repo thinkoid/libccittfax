@@ -169,20 +169,29 @@ emit(struct cf_buffer_t *dst, int rle, int color, int black_is_1)
 static int
 find_b1(const char *ref, int a0, int color, int columns, int black_is_1)
 {
-        int pos, ref_color;
+        int pos, prev;
 
-        pos = (a0 < 0) ? 0 : a0 + 1;
-        if (pos >= columns)
-                return columns;
+        /*
+         * b1 is the first *changing element* on the reference line strictly to
+         * the right of a0 whose colour is opposite to the coding colour.  A
+         * changing element is a pixel differing from its predecessor; the
+         * imaginary pixel before the line is white.  It is not enough for the
+         * pixel at a0+1 to be the opposite colour -- it must also be a colour
+         * transition, otherwise the opposite-colour run began at or before a0
+         * and its changing element lies further right.
+         */
+        prev = (a0 < 0) ? 1 : (cf_getbit(ref, a0) ^ black_is_1);
 
-        ref_color = cf_getbit(ref, pos) ^ black_is_1;
+        for (pos = (a0 < 0) ? 0 : a0 + 1; pos < columns; ++pos) {
+                int cur = cf_getbit(ref, pos) ^ black_is_1;
+                if (cur != prev) {           /* changing element at pos */
+                        if (cur != color)    /* opposite colour -> b1   */
+                                return pos;
+                        prev = cur;
+                }
+        }
 
-        /* If the reference line at pos is already the opposite color, b1=pos */
-        if (ref_color != color)
-                return pos;
-
-        /* Otherwise skip the run of `color' pixels on the reference line */
-        return cf_find_changing(ref, pos, columns);
+        return columns;
 }
 
 /*
