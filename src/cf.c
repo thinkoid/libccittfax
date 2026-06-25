@@ -165,12 +165,18 @@ void cf_byte_align(struct cf_buffer_t *buf)
 
 int cf_find_changing(const char *buf, int pos, int endpos)
 {
-        int color = 0;
+        int color;
 
         if (pos < 0)
                 pos = 0;
-        else
-                color = cf_get_color(buf, pos);
+
+        if (pos >= endpos)
+                return endpos;
+
+        /* Colour of the run starting at pos; return the first pixel that
+         * differs from it (the end of that run).  pos < 0 is clamped to 0 and
+         * the colour is inferred there, like any other position. */
+        color = cf_get_color(buf, pos);
 
         for(; pos < endpos; ++pos) {
                 if (color != cf_get_color(buf, pos))

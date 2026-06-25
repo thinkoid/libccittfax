@@ -39,9 +39,10 @@ test_cf_find_changing(struct test_t *test)
         TEST(test, cf_find_changing((const char*)o, 0, 16) == 16);
         TEST(test, cf_find_changing((const char*)o, 9, 16) == 16);
 
-        /* change exactly at endpos-1 should return endpos-1 if it flips there */
+        /* From pos, find where the run starting at pos ends.  edge bit 8 is 0
+         * (start of a 1-pixel run); it ends at bit 9 where the colour flips. */
         const unsigned char edge[] = { 0xFF, 0x7F }; /* ... 11111111 01111111 */
-        TEST(test, cf_find_changing((const char*)edge, 8, 16) == 8); /* 1->0 at bit 8 */
+        TEST(test, cf_find_changing((const char*)edge, 8, 16) == 9); /* 0->1 at bit 9 */
 }
 
 int main()
