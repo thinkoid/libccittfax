@@ -1,10 +1,9 @@
 /* -*- mode: c; -*- */
 
 #include <ccittfax/ccittfax.h>
-
-#define STR_(x) #x
+#include <ccittfax/config.h>
 
 const char *version()
 {
-        return STR_(VERSION);
+        return CCITTFAX_VERSION;
 }

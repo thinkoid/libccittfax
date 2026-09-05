@@ -36,7 +36,7 @@
  */
 
 struct cf_buffer_t *
-cfc_g4(const char *src, struct cf_params_t *params)
+cfc_g4(const char *src, const struct cf_params_t *params)
 {
         struct cf_buffer_t *dst;
         const char *coding;
@@ -62,8 +62,7 @@ cfc_g4(const char *src, struct cf_params_t *params)
         ref = malloc(row_bytes);
         if (!ref) {
                 fprintf(stderr, "cfc_g4: malloc ref: %s\n", strerror(errno));
-                free(dst->buf);
-                free(dst);
+                cf_free_buffer(dst);
                 return 0;
         }
         memset(ref, params->black_is_1 ? 0x00 : 0xff, row_bytes);
@@ -99,7 +98,6 @@ cfc_g4(const char *src, struct cf_params_t *params)
 
 err:
         free(ref);
-        free(dst->buf);
-        free(dst);
+        cf_free_buffer(dst);
         return 0;
 }

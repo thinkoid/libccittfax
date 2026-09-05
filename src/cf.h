@@ -46,50 +46,11 @@ inline uint64_t cf_bswap64(uint64_t x)
 #  define CF_TOBE64(x) (x)
 #endif /* CF_LITTLE_ENDIAN */
 
-#define CF_DO_CAT(a, b) a##b
-#define CF_CAT(a, b) CF_DO_CAT(a, b)
-
-#define ROTL_DEF(type, width)                                       \
-        static inline type CF_CAT(cf_rotl, width)(type x, size_t n) \
-        {                                                           \
-                assert(n <= (sizeof(type) << 3));                   \
-                return (x << n) | (x >> ((sizeof x << 3) - n));     \
-        }
-
-#define ROTR_DEF(type, width)                                       \
-        static inline type CF_CAT(cf_rotr, width)(type x, size_t n) \
-        {                                                           \
-                assert(n <= (sizeof(type) << 3));                   \
-                return (x >> n) | (x << ((sizeof x << 3) - n));     \
-        }
-
-ROTR_DEF(uint8_t, 8)
-ROTR_DEF(uint16_t, 16)
-ROTR_DEF(uint32_t, 32)
-ROTR_DEF(uint64_t, 64)
-
-ROTL_DEF(uint8_t, 8)
-ROTL_DEF(uint16_t, 16)
-ROTL_DEF(uint32_t, 32)
-ROTL_DEF(uint64_t, 64)
-
 int cf_getbit(const char *buf, size_t pos);
 
 inline int cf_get_color(const char *buf, size_t pos) {
-        /* 0 is white, 1 is black; allow for inverse colors, pass params */
+        /* 1 is white, 0 is black (black_is_1 inverts the raster) */
         return cf_getbit(buf, pos);
-}
-
-inline int cf_is_white(const char *buf, size_t pos) {
-        return 0 == cf_get_color(buf, pos);
-}
-
-inline int cf_is_black(const char *buf, size_t pos) {
-        return 1 == cf_get_color(buf, pos);
-}
-
-inline int cf_is_same_color(const char *buf, size_t pos, int color) {
-        return color == cf_get_color(buf, pos);
 }
 
 void cf_setbit(char *buf, size_t pos, int value);

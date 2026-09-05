@@ -26,10 +26,12 @@ struct cf_buffer_t {
         size_t cap, pos;
 };
 
-struct cf_buffer_t *
-cfc(const char *src, struct cf_params_t *params);
+void cf_free_buffer(struct cf_buffer_t *buf);
 
 struct cf_buffer_t *
-cfd(const char *src, size_t srclen, struct cf_params_t *params);
+cfc(const char *src, const struct cf_params_t *params);
+
+struct cf_buffer_t *
+cfd(const char *src, size_t srclen, const struct cf_params_t *params);
 
 #endif /* CCITTFAX_CCITTFAX_H */

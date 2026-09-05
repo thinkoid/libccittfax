@@ -137,7 +137,7 @@ get_eob_tail(struct cf_buffer_t *src)
 }
 
 struct cf_buffer_t *
-cfd_g3_2d(const char *src, size_t srclen, struct cf_params_t *params)
+cfd_g3_2d(const char *src, size_t srclen, const struct cf_params_t *params)
 {
         struct cf_buffer_t *dst;
         struct cf_buffer_t sbuf;
@@ -161,8 +161,7 @@ cfd_g3_2d(const char *src, size_t srclen, struct cf_params_t *params)
 
         ref = malloc(row_bytes);
         if (!ref) {
-                free(dst->buf);
-                free(dst);
+                cf_free_buffer(dst);
                 return 0;
         }
         memset(ref, white_byte, row_bytes);

@@ -5,16 +5,16 @@
 #include "cf.h"
 
 struct cf_buffer_t *
-cfd_g3_1d(const char *src, size_t srclen, struct cf_params_t *params);
+cfd_g3_1d(const char *src, size_t srclen, const struct cf_params_t *params);
 
 struct cf_buffer_t *
-cfd_g3_2d(const char *src, size_t srclen, struct cf_params_t *params);
+cfd_g3_2d(const char *src, size_t srclen, const struct cf_params_t *params);
 
 struct cf_buffer_t *
-cfd_g4(const char *src, size_t srclen, struct cf_params_t *params);
+cfd_g4(const char *src, size_t srclen, const struct cf_params_t *params);
 
 struct cf_buffer_t *
-cfd(const char *src, size_t srclen, struct cf_params_t *params)
+cfd(const char *src, size_t srclen, const struct cf_params_t *params)
 {
         if (0 == params)
                 return 0;

@@ -98,12 +98,19 @@ cf_make_buffer()
                 return 0;
 
         if (0 == cf_resize_buffer(cf_buf)) {
-                free(cf_buf->buf);
-                free(cf_buf);
+                cf_free_buffer(cf_buf);
                 cf_buf = 0;
         }
 
         return cf_buf;
+}
+
+void cf_free_buffer(struct cf_buffer_t *cf_buf)
+{
+        if (cf_buf) {
+                free(cf_buf->buf);
+                free(cf_buf);
+        }
 }
 
 static void cf_setbits_white(char *buf, size_t beg, size_t end)

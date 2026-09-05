@@ -18,6 +18,7 @@ add_project_arguments(
 inc_lib        = include_directories('include')
 inc_thirdparty = include_directories('third-party')
 
+subdir('include/ccittfax')
 subdir('src')
 
 pkg = import('pkgconfig')

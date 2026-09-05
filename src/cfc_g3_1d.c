@@ -34,7 +34,7 @@ cfc_encoded_byte_align(struct cf_buffer_t *buf)
 
 int
 cfc_g3_1d_line(struct cf_buffer_t *dst, struct cf_buffer_t *src,
-               struct cf_params_t *params)
+               const struct cf_params_t *params)
 {
         int color;
 
@@ -57,7 +57,7 @@ cfc_g3_1d_line(struct cf_buffer_t *dst, struct cf_buffer_t *src,
 
 static struct cf_buffer_t *
 cfc_do_g3_1d(struct cf_buffer_t *dst, struct cf_buffer_t *src,
-             struct cf_params_t *params)
+             const struct cf_params_t *params)
 {
         for (int i = 0; i < params->rows; ++i) {
                 if (params->end_of_line && cfc_put_eol(dst)) {
@@ -83,14 +83,13 @@ cfc_do_g3_1d(struct cf_buffer_t *dst, struct cf_buffer_t *src,
         return dst;
 
 err:
-        free(dst->buf);
-        free(dst);
+        cf_free_buffer(dst);
 
         return 0;
 }
 
 struct cf_buffer_t *
-cfc_g3_1d(const char *buf, struct cf_params_t *params)
+cfc_g3_1d(const char *buf, const struct cf_params_t *params)
 {
         struct cf_buffer_t src, *dst;
 

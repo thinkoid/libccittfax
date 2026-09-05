@@ -50,8 +50,7 @@ main(int argc, char **argv)
 
         fwrite(pdst->buf, (pdst->pos + 7) >> 3, 1, stdout);
 
-        free(pdst->buf);
-        free(pdst);
+        cf_free_buffer(pdst);
 err:
         free(psrc);
 end:

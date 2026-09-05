@@ -209,7 +209,7 @@ cfd_g3_1d_line(struct cf_state_t *state)
 }
 
 struct cf_buffer_t*
-cfd_g3_1d(const char *buf, size_t len, struct cf_params_t *params)
+cfd_g3_1d(const char *buf, size_t len, const struct cf_params_t *params)
 {
         int line;
 

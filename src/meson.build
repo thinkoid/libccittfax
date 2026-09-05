@@ -29,7 +29,6 @@ install_headers('../include/ccittfax.h')
 
 install_headers(
   '../include/ccittfax/ccittfax.h',
-  '../include/ccittfax/config.h',
   '../include/ccittfax/defs.h',
   subdir : 'ccittfax',
 )

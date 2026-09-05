@@ -118,8 +118,7 @@ int main(int argc, char **argv)
         fwrite(&params, sizeof params, 1, stdout);
         fwrite((unsigned char *)dst->buf, (dst->pos + 7) >> 3, 1, stdout);
 
-        free(dst->buf);
-        free(dst);
+        cf_free_buffer(dst);
 
         free(src);
 
