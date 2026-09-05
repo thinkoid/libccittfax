@@ -1,22 +1,31 @@
 /* -*- mode: c; -*- */
 
 /*
- * Tests for cfd_g4 (T.6 MMR decoder).
+ * Tests for cfc_g4 (T.6 MMR encoder) -- the real ones.
  *
- * All test bitstreams are constructed by hand and verified against the
- * mode-code table in the decoder comments:
+ * Until 4f49362 this file was a verbatim copy of test_cfd_g4.c: it made
+ * seven cfd() calls, none to cfc(), and registered under the same "cfd_g4"
+ * suite name, so those decoder cases simply ran twice. Nothing in tests/
+ * called the encoder at all, which is how a 2D encoder that emitted b1
+ * values that were not changing elements shipped into a package with the
+ * suite green.
  *
- *   V(0)   1
- *   H      001
- *   Pass   0001
- *   VR(1)  011
- *   VL(1)  010
+ * Each case pins the exact bitstream cfc() emits for a known raster. The
+ * mode codes come from the table at the top of cfc_2d.c:
  *
- * Image convention:
- *   1 = white, 0 = black  (black_is_1 = 0, the default)
- *   coding line starts white (color = 1) at a0 = -1
+ *   V(0)   1           H      001         Pass   0001
+ *   VR(1)  011         VL(1)  010
+ *   VR(2)  000011      VL(2)  000010
  *
- * Output rows are byte-aligned (cf_byte_align after each row).
+ * and the run-length codewords are the ones already hand-verified in
+ * test_cfd_g4.c (white 4 = 1011, black 8 = 000101), so the two files agree
+ * on the same bits from opposite directions: what the decoder is fed here
+ * is what the encoder is expected to produce.
+ *
+ * Image convention: 1 = white, 0 = black (black_is_1 = 0, the default);
+ * the coding line starts white at a0 = -1, and the reference line above
+ * row 0 is imaginary all-white. No EOL between rows in G4; EOFB is two
+ * 12-bit EOL codewords, appended only when end_of_block is set.
  */
 
 #include <stdio.h>
@@ -28,12 +37,12 @@
 #include "test.h"
 
 /* ------------------------------------------------------------------ */
-/* Minimal bit-packing helper for constructing test streams            */
+/* Bit-packing helper for constructing expected streams                */
 /* ------------------------------------------------------------------ */
 
 struct bits_t {
         unsigned char buf[256];
-        int           pos;  /* next bit to write */
+        int           pos;      /* next bit to write */
 };
 
 static void
@@ -43,446 +52,286 @@ bits_init(struct bits_t *b)
         b->pos = 0;
 }
 
-/* Append `len' MSB-first bits from `val' */
+/* Append `len' MSB-first bits from `val'. */
 static void
 bits_put(struct bits_t *b, unsigned val, int len)
 {
         int i;
+
         for (i = len - 1; i >= 0; --i) {
-                int bit = (val >> i) & 1;
-                if (bit)
+                if ((val >> i) & 1)
                         b->buf[b->pos >> 3] |= 0x80 >> (b->pos & 7);
                 ++b->pos;
         }
 }
 
-static int
-bits_bytes(const struct bits_t *b)
+/* The mode codes, spelled once. */
+static void put_v0(struct bits_t *b)   { bits_put(b, 0x1, 1); }
+static void put_vr1(struct bits_t *b)  { bits_put(b, 0x3, 3); }
+static void put_vl2(struct bits_t *b)  { bits_put(b, 0x2, 6); }
+static void put_h(struct bits_t *b)    { bits_put(b, 0x1, 3); }
+static void put_pass(struct bits_t *b) { bits_put(b, 0x1, 4); }
+
+/* Terminating run codewords used below, from test_cfd_g4.c. */
+static void put_white4(struct bits_t *b) { bits_put(b, 0xB,  4); }
+static void put_black8(struct bits_t *b) { bits_put(b, 0x05, 6); }
+
+/* EOFB: two 12-bit EOL codewords. */
+static void
+put_eofb(struct bits_t *b)
 {
-        return (b->pos + 7) >> 3;
+        bits_put(b, 0x1, 12);
+        bits_put(b, 0x1, 12);
 }
 
 /* ------------------------------------------------------------------ */
-/* Helpers                                                             */
+/* Raster helpers                                                      */
 /* ------------------------------------------------------------------ */
 
+/*
+ * Write one row from a picture of it: 'W' white, 'B' black, one character
+ * per column. Spelling the rows out keeps each case readable as an image
+ * rather than as hexadecimal.
+ */
+static void
+row_from_string(char *raster, int row, int stride, const char *s)
+{
+        size_t x;
+
+        for (x = 0; s[x]; ++x) {
+                size_t         pos = (size_t)row * stride * 8 + x;
+                unsigned char *p   = (unsigned char *)raster + (pos >> 3);
+                unsigned char  m   = (unsigned char)(0x80 >> (pos & 7));
+
+                *p = (unsigned char)('W' == s[x] ? (*p | m) : (*p & ~m));
+        }
+}
+
 static struct cf_params_t
-make_params(int columns, int rows)
+make_params(int columns, int rows, int end_of_block)
 {
         struct cf_params_t p;
+
         memset(&p, 0, sizeof p);
-        p.k              = -1;  /* G4 */
-        p.columns        = columns;
-        p.rows           = rows;
-        p.end_of_block   = 0;
-        p.black_is_1     = 0;
-        p.damage_limit   = 0;
+
+        p.k            = -1;    /* G4 */
+        p.columns      = columns;
+        p.rows         = rows;
+        p.end_of_block = end_of_block;
+
         return p;
 }
 
 /*
- * Return 1 if the decoded output matches `expected' (bit-packed,
- * row-aligned, rows*row_bytes bytes).
+ * Encode `rows' spelled-out rows and require the emitted stream to equal
+ * `expect' exactly -- same bit count, same bits.
  */
-static int
-output_matches(const struct cf_buffer_t *dst,
-               const unsigned char *expected,
-               int rows, int columns)
-{
-        int row_bytes = (columns + 7) >> 3;
-        int total     = rows * row_bytes;
-        int decoded   = (int)((dst->pos + 7) >> 3);
-
-        if (decoded != total)
-                return 0;
-
-        return 0 == memcmp(dst->buf, expected, total);
-}
-
-/* ------------------------------------------------------------------ */
-/* Test 1: single all-white row, 8 pixels                              */
-/*                                                                     */
-/* Reference line: all white (implicit).                               */
-/* Coding line:    all white → same as reference.                      */
-/*                                                                     */
-/* Encode: a0=-1, color=white.                                         */
-/*   b1 = first black on ref to right of a0 = columns (none) = 8      */
-/*   Use V(0) eight times would overshoot; actually with a0=-1:        */
-/*   b1 = 8 (no black pixel on all-white ref).                         */
-/*   Since ref is all white and coding line is all white, every        */
-/*   changing element is at position 8 (past end).  The encoder would  */
-/*   emit Pass for the whole row (b2=8, a0 advances to 8 immediately). */
-/*                                                                     */
-/* Simpler encoding: one Pass code moves a0 to b2=8, row done.        */
-/* ------------------------------------------------------------------ */
 static void
-test_all_white_row(struct test_t *t)
+check_encoding(struct test_t *t, const char *what,
+               const char *const *rows, int nrows, int columns,
+               int end_of_block, const struct bits_t *expect)
 {
-        struct bits_t bs;
-        struct cf_params_t params;
-        struct cf_buffer_t *dst;
-        unsigned char expected[1] = { 0xff }; /* 8 white pixels */
+        struct cf_params_t  params = make_params(columns, nrows, end_of_block);
+        struct cf_buffer_t *enc;
 
-        NOTE(("test_all_white_row: 8-pixel all-white row via Pass"));
+        const int stride = (columns + 7) / 8;
 
-        bits_init(&bs);
-        /* Pass = 0001 */
-        bits_put(&bs, 0x1, 4);
+        char *raster = calloc((size_t)nrows * stride, 1);
+        int   i;
 
-        params = make_params(8, 1);
-        dst = cfd((const char *)bs.buf, bits_bytes(&bs), &params);
+        TEST(t, 0 != raster, "%s: out of memory", what);
+        if (0 == raster)
+                return;
 
-        TEST(t, dst != 0, "decoder returned non-null");
-        if (dst) {
-                TEST(t, output_matches(dst, expected, 1, 8),
-                     "all-white row decoded correctly");
-                if (!output_matches(dst, expected, 1, 8))
-                        dump_buffer(dst->buf, (dst->pos + 7) >> 3);
-                free(dst->buf);
-                free(dst);
-        }
-}
+        for (i = 0; i < nrows; ++i)
+                row_from_string(raster, i, stride, rows[i]);
 
-/* ------------------------------------------------------------------ */
-/* Test 2: single all-black row, 8 pixels                              */
-/*                                                                     */
-/* Reference: all white.  Coding line: all black.                      */
-/*                                                                     */
-/* a0=-1, color=white.                                                 */
-/*   b1 = first black on ref to right of a0 = 8 (none).               */
-/*   No pass (b2 would be 8, no change yet at start).                  */
-/*                                                                     */
-/* Use H mode to emit the entire row as two runs:                      */
-/*   run1: 0 white pixels (terminator 00110101, 8 bits... wait,        */
-/*         that's the 1D white-0 code = 00110101).                     */
-/*   run2: 8 black pixels (makeup + terminator? No: 8 < 64, use        */
-/*         black terminating code for 8 = 10011).                      */
-/*                                                                     */
-/* H mode: 001 + white_run(0) + black_run(8)                          */
-/*   white term rle[0]  = 00110101  (8 bits, value 0x35)               */
-/*   black term rle[8]  = 10011     (5 bits, value 0x13)               */
-/* ------------------------------------------------------------------ */
-static void
-test_all_black_row(struct test_t *t)
-{
-        struct bits_t bs;
-        struct cf_params_t params;
-        struct cf_buffer_t *dst;
-        unsigned char expected[1] = { 0x00 }; /* 8 black pixels */
+        enc = cfc(raster, &params);
 
-        NOTE(("test_all_black_row: 8-pixel all-black row via H mode"));
-
-        /*
-         * H = 001
-         * white term rle[0] = { 0x35, 8 }  (00110101)
-         * black term rle[8] = { 0x05, 6 }  (000101)
-         */
-        bits_init(&bs);
-        bits_put(&bs, 0x1, 3);   /* H */
-        bits_put(&bs, 0x35, 8);  /* white run 0 */
-        bits_put(&bs, 0x05, 6);  /* black run 8 */
-
-        params = make_params(8, 1);
-        dst = cfd((const char *)bs.buf, bits_bytes(&bs), &params);
-
-        TEST(t, dst != 0, "decoder returned non-null");
-        if (dst) {
-                TEST(t, output_matches(dst, expected, 1, 8),
-                     "all-black row decoded correctly");
-                if (!output_matches(dst, expected, 1, 8))
-                        dump_buffer(dst->buf, (dst->pos + 7) >> 3);
-                free(dst->buf);
-                free(dst);
-        }
-}
-
-/* ------------------------------------------------------------------ */
-/* Test 3: two rows, second identical to first (all-white)             */
-/*   Row 0: Pass (ref=all-white, coding=all-white)                     */
-/*   Row 1: Pass (ref=all-white again, coding=all-white)               */
-/* ------------------------------------------------------------------ */
-static void
-test_two_white_rows(struct test_t *t)
-{
-        struct bits_t bs;
-        struct cf_params_t params;
-        struct cf_buffer_t *dst;
-        unsigned char expected[2] = { 0xff, 0xff };
-
-        NOTE(("test_two_white_rows: two 8-pixel all-white rows"));
-
-        bits_init(&bs);
-        bits_put(&bs, 0x1, 4); /* Pass row 0 */
-        bits_put(&bs, 0x1, 4); /* Pass row 1 */
-
-        params = make_params(8, 2);
-        dst = cfd((const char *)bs.buf, bits_bytes(&bs), &params);
-
-        TEST(t, dst != 0, "decoder returned non-null");
-        if (dst) {
-                TEST(t, output_matches(dst, expected, 2, 8),
-                     "two all-white rows decoded correctly");
-                if (!output_matches(dst, expected, 2, 8))
-                        dump_buffer(dst->buf, (dst->pos + 7) >> 3);
-                free(dst->buf);
-                free(dst);
-        }
-}
-
-/* ------------------------------------------------------------------ */
-/* Test 4: V(0) mode — coding line identical to reference              */
-/*                                                                     */
-/* 4 pixels, ref = BWBW (0x50 = 0101 0000 in MSB-first).              */
-/* coding = BWBW  → each changing element aligns with reference.       */
-/*                                                                     */
-/* a0=-1, color=white.                                                 */
-/*   b1=0 (first black on ref right of -1). a1=b1+0=0. emit 0 white.  */
-/*   color=black, a0=0.                                                */
-/*   b1=1 (first white on ref right of 0). a1=1. emit 1 black.        */
-/*   color=white, a0=1.                                                */
-/*   b1=2 (first black on ref right of 1). a1=2. emit 1 white.        */
-/*   color=black, a0=2.                                                */
-/*   b1=3 (first white on ref right of 2). a1=3. emit 1 black.        */
-/*   color=white, a0=3.                                                */
-/*   b1=4=columns. a1=4. emit 1 white. a0=4. done.                    */
-/*                                                                     */
-/* Wait — ref is BWBW and coding starts white.  b1 for first step is  */
-/* the first black on ref right of a0=-1, which is position 0.        */
-/* V(0): a1=b1=0, emit 0 white pixels, color→black, a0=0.             */
-/* Now color=black; b1=first white on ref right of 0 = pos 1.         */
-/* V(0): a1=1, emit 1 black pixel, color→white, a0=1.                 */
-/* color=white; b1=first black on ref right of 1 = pos 2.             */
-/* V(0): a1=2, emit 1 white pixel, color→black, a0=2.                 */
-/* color=black; b1=first white on ref right of 2 = pos 3.             */
-/* V(0): a1=3, emit 1 black pixel, color→white, a0=3.                 */
-/* color=white; b1=first black on ref right of 3 = pos 4=columns.     */
-/* V(0): a1=4, emit 1 white pixel, a0=4. done.                        */
-/*                                                                     */
-/* Encoding: five V(0) codes = five '1' bits.                         */
-/* Expected output: 0 white + 1 black + 1 white + 1 black + 1 white   */
-/*   = BWBW = 0101 in MSB-first = 0x50 (padded to 8 bits = 0101 0000) */
-/* ------------------------------------------------------------------ */
-static void
-test_v0_mode(struct test_t *t)
-{
-        struct bits_t bs;
-        struct cf_params_t params;
-        struct cf_buffer_t *dst;
-
-        /* ref row: BWBW packed MSB-first = 0101 xxxx = 0x50 */
-        unsigned char ref_row[1] = { 0x50 };
-
-        /* expected output = BWBW = 0x50 */
-        unsigned char expected[1] = { 0x50 };
-
-        /*
-         * To feed a specific reference line we encode two rows:
-         * row 0 produces the desired ref for row 1.
-         * Row 0 from all-white ref → BWBW coding:
-         *   a0=-1,color=white; b1=4=columns (all-white ref).
-         *   Use H to emit 0 white + 4 black? No, that gives BBBB.
-         *   Actually encode row 0 = BWBW using H:
-         *     H + white_run(0) + black_run(1) gives first BW pair,
-         *     then need another H for second BW pair.
-         *   Simpler: use H twice.
-         *     H: 001 + white(0)=00110101 + black(1)=010
-         *     H: 001 + white(0)=00110101 + black(1)=010  (wrong, we need WB not BW)
-         *
-         * Actually let's just test V(0) with two identical rows,
-         * both all-white (simpler, V(0) not needed) — instead use
-         * a direct approach: one row, 4 pixels, WWWW with V(0) ×1.
-         *
-         * Simplest V(0) test: 1-pixel image, 1 row, white.
-         * ref=white, coding=white.
-         * a0=-1,color=white; b1=columns=1 (no black on all-white ref).
-         * V(0): a1=1, emit 1 white pixel, done.
-         * Encoding: 1 bit = '1'.
-         * Expected: 0x80 (1 white pixel, padded).
-         */
-
-        NOTE(("test_v0_mode: 1-pixel white row via V(0)"));
-
-        bits_init(&bs);
-        bits_put(&bs, 1, 1); /* V(0) */
-
-        params = make_params(1, 1);
-        dst = cfd((const char *)bs.buf, bits_bytes(&bs), &params);
-
-        TEST(t, dst != 0, "decoder returned non-null");
-        if (dst) {
-                unsigned char exp1[1] = { 0x80 }; /* 1 white pixel */
-                TEST(t, output_matches(dst, exp1, 1, 1),
-                     "1-pixel white via V(0) correct");
-                if (!output_matches(dst, exp1, 1, 1))
-                        dump_buffer(dst->buf, (dst->pos + 7) >> 3);
-                free(dst->buf);
-                free(dst);
+        TEST(t, 0 != enc, "%s: cfc returned non-null", what);
+        if (0 == enc) {
+                free(raster);
+                return;
         }
 
-        /* Suppress unused variable warning */
-        (void)ref_row;
-        (void)expected;
-}
+        TEST(t, (int)enc->pos == expect->pos,
+             "%s: emitted %d bits, expected %d",
+             what, (int)enc->pos, expect->pos);
 
-/* ------------------------------------------------------------------ */
-/* Test 5: EOFB terminates before params->rows                         */
-/* ------------------------------------------------------------------ */
-static void
-test_eofb(struct test_t *t)
-{
-        struct bits_t bs;
-        struct cf_params_t params;
-        struct cf_buffer_t *dst;
+        if ((int)enc->pos == expect->pos) {
+                int n = (expect->pos + 7) >> 3;
 
-        NOTE(("test_eofb: EOFB after 1 row, params->rows=3"));
+                TEST(t, 0 == memcmp(enc->buf, expect->buf, (size_t)n),
+                     "%s: bitstream matches", what);
 
-        bits_init(&bs);
-        /* Row 0: all-white via Pass */
-        bits_put(&bs, 0x1, 4); /* Pass */
-        /* EOFB: 000000000001 000000000001 */
-        bits_put(&bs, 0x001, 12);
-        bits_put(&bs, 0x001, 12);
-
-        params = make_params(8, 3); /* claim 3 rows but only 1 present */
-        dst = cfd((const char *)bs.buf, bits_bytes(&bs), &params);
-
-        TEST(t, dst != 0, "decoder returned non-null after EOFB");
-        if (dst) {
-                /* Should have decoded exactly 1 row = 1 byte */
-                int decoded_bytes = (int)((dst->pos + 7) >> 3);
-                TEST(t, decoded_bytes == 1,
-                     "EOFB stopped at 1 row (%d bytes decoded)", decoded_bytes);
-                free(dst->buf);
-                free(dst);
+                if (0 != memcmp(enc->buf, expect->buf, (size_t)n)) {
+                        printf("## emitted:\n");
+                        dump_buffer(enc->buf, (size_t)n);
+                        printf("## expected:\n");
+                        dump_buffer((const char *)expect->buf, (size_t)n);
+                }
         }
+
+        cf_free_buffer(enc);
+        free(raster);
+}
+
+/* The reference row every two-row case below codes against. */
+#define REF_ROW "WWWWBBBBBBBBWWWW"
+
+/*
+ * Row 0 of those cases, coded against the imaginary all-white line:
+ * a1 = 4 and b1 = 16, so |a1 - b1| is far past vertical range and Pass
+ * does not apply -- H, then the trailing white run closes with V(0).
+ */
+static void
+put_ref_row(struct bits_t *b)
+{
+        put_h(b);
+        put_white4(b);
+        put_black8(b);
+        put_v0(b);
 }
 
 /* ------------------------------------------------------------------ */
-/* Test 6: VR(1) and VL(1)                                             */
-/*                                                                     */
-/* 4-pixel image, 2 rows.                                              */
-/* Row 0 from all-white ref, coding = WWWW (all white):                */
-/*   Pass (0001) advances a0 to 4.                                     */
-/* Row 1 from all-white ref (row 0 = WWWW), coding = WBWW:            */
-/*   a0=-1, color=white.                                               */
-/*   b1=4=columns (no black on ref). Use VR(1) to place a1=b1+1=5→4.  */
-/*   Actually VR(1) would give a1=5 which exceeds columns; clamped=4.  */
-/*   emit 4 white. done. That gives WWWW, not WBWW.                   */
-/*                                                                     */
-/* Let's test something concrete: 4-pixel row, coding = WWBW.         */
-/* ref = WWWW (all white).                                             */
-/*   a0=-1, color=white.                                               */
-/*   b1=4 (no black on ref).                                           */
-/*   To place a1=2 (transition W→B at pos 2): b1+offset=4+(-2)=2→VL(1)? */
-/*   No: VL(1) = b1 + (-1). b1=4, a1=3. Emit 3 white, color→black.   */
-/*   a0=3, color=black.                                                */
-/*   b1=4 (no black... wait, b1 = first opposite color = first white   */
-/*   on ref right of 3 = pos 3 since ref is all white). b1=3.         */
-/*   Hmm, ref is WWWW, color is now black, so b1 = first white on ref  */
-/*   right of a0=3 = position 3. V(0): a1=3. emit 0 black. Loop.      */
-/*   This gets complicated. Use H instead for a mixed row.             */
-/*                                                                     */
-/* Test VR(1)/VL(1) via a two-row sequence where row 1 uses them.     */
-/* Keep it simple: 4 pixels.                                           */
-/*   Row 0: WWWW (Pass from all-white ref).                            */
-/*   Row 1 coding = WWWB. ref = WWWW.                                  */
-/*   a0=-1, color=white; b1=4.                                         */
-/*   Want a1=3 (W→B at pos 3). b1=4, need a1=4-1=3 → VL(1).          */
-/*   emit 3 white, color→black, a0=3.                                  */
-/*   color=black; b1=first white on ref right of 3 = pos 3.           */
-/*   V(0): a1=3. emit 0 black. color→white, a0=3.                     */
-/*   Now a0=3 < columns=4, color=white.                                */
-/*   b1=first black on ref right of 3 = 4=columns.                    */
-/*   V(0): a1=4. emit 1 white. done.                                   */
-/*   Hmm that gives WWWWW... col=4, so WWWW only and we're done.      */
-/*                                                                     */
-/* Actually after VL(1): emit 3 white pixels (pos 0..2), a0=3,        */
-/* color=black. Now only 1 pixel left (pos 3). color=black, so we     */
-/* emit it as black: b1=first white on ref right of a0=3: ref[3]=W,   */
-/* b1=3. V(0): a1=3+0=3. rle=3-(3)=0. emit 0 black. color→white.     */
-/* a0=3, color=white. b1=first black on ref right of 3=4=columns.     */
-/* V(0): a1=4. rle=4-3=1. emit 1 white. a0=4. done.                   */
-/* Output: WWW + 0 black + 1 white = WWWW. Not WWWB.                  */
-/*                                                                     */
-/* The issue: after VL(1) we set a0=a1=3 and color=black, meaning     */
-/* pixel at position 3 is black. Then we need to get to a0=4 emitting */
-/* 1 black pixel.                                                       */
-/* b1 = first white on ref right of a0=3 = position 3 (ref[3]=W).    */
-/* V(0) gives a1=3+0=3. rle=3-3=0. emit 0 black. We're stuck!        */
-/*                                                                     */
-/* Use H for row 1 instead. WWWB:                                      */
-/*   H + white_run(3) + black_run(1).                                  */
-/*   white term rle[3] = 10000 (5 bits).                               */
-/*   black term rle[1] = 010 (3 bits).                                 */
+/* Cases                                                               */
 /* ------------------------------------------------------------------ */
+
+/*
+ * An all-white image against an all-white reference: every row has no
+ * changing element, so a1 = b1 = columns and each row is a single V(0).
+ */
 static void
-test_vr1_vl1(struct test_t *t)
+test_all_white_image(struct test_t *t)
 {
-        struct bits_t bs;
-        struct cf_params_t params;
-        struct cf_buffer_t *dst;
+        static const char *const rows[] = {
+                "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW",
+                "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW"
+        };
 
-        NOTE(("test_vr1_vl1: row via H producing WWWB, then VL(1) row"));
-
-        /*
-         * Just test that VL(1) and VR(1) are decoded without error
-         * by constructing a row that uses VR(1).
-         *
-         * 4 pixels, ref=WWWW, coding=WWWWW... actually test VR(1):
-         * Want a1 = b1+1.  b1=4(columns), a1=5 clamped to 4.
-         * Emit 4 white pixels. Done. Same as V(0) with b1=4.
-         * Output: WWWW = 0xF0.
-         */
-        bits_init(&bs);
-        /* VR(1) = 011 */
-        bits_put(&bs, 0x3, 3);
-
-        params = make_params(4, 1);
-        dst = cfd((const char *)bs.buf, bits_bytes(&bs), &params);
-
-        TEST(t, dst != 0, "VR(1) decoder returned non-null");
-        if (dst) {
-                unsigned char exp[1] = { 0xF0 }; /* WWWW */
-                TEST(t, output_matches(dst, exp, 1, 4),
-                     "VR(1) row decoded correctly");
-                if (!output_matches(dst, exp, 1, 4))
-                        dump_buffer(dst->buf, (dst->pos + 7) >> 3);
-                free(dst->buf);
-                free(dst);
-        }
-}
-
-/* ------------------------------------------------------------------ */
-/* Test 7: round-trip sanity — all-white 16-pixel, 4-row image         */
-/* ------------------------------------------------------------------ */
-static void
-test_white_image(struct test_t *t)
-{
-        struct bits_t bs;
-        struct cf_params_t params;
-        struct cf_buffer_t *dst;
-        unsigned char expected[8];
+        struct bits_t expect;
         int i;
 
-        NOTE(("test_white_image: 16x4 all-white image via Pass"));
+        NOTE(("test_all_white_image: 16x4 all white, one V(0) per row"));
 
-        memset(expected, 0xff, sizeof expected);
-
-        bits_init(&bs);
-        /* 4 rows, each encoded as Pass */
+        bits_init(&expect);
         for (i = 0; i < 4; ++i)
-                bits_put(&bs, 0x1, 4);
+                put_v0(&expect);
 
-        params = make_params(16, 4);
-        dst = cfd((const char *)bs.buf, bits_bytes(&bs), &params);
+        check_encoding(t, "16x4 all-white", rows, 4, 16, 0, &expect);
+}
 
-        TEST(t, dst != 0, "decoder returned non-null");
-        if (dst) {
-                TEST(t, output_matches(dst, expected, 4, 16),
-                     "16x4 all-white decoded correctly");
-                free(dst->buf);
-                free(dst);
-        }
+/*
+ * Horizontal mode on the first row, which is the only mode that can start
+ * an image whose first changing element is far from the imaginary line.
+ */
+static void
+test_horizontal_mode(struct test_t *t)
+{
+        static const char *const rows[] = { REF_ROW };
+
+        struct bits_t expect;
+
+        NOTE(("test_horizontal_mode: W4 B8 W4 as H + runs, closed by V(0)"));
+
+        bits_init(&expect);
+        put_ref_row(&expect);
+
+        check_encoding(t, "16x1 H mode", rows, 1, 16, 0, &expect);
+}
+
+/*
+ * Vertical mode: row 1's first changing element sits one to the right of
+ * the reference's, which is VR(1); the remaining two align exactly.
+ */
+static void
+test_vertical_mode(struct test_t *t)
+{
+        static const char *const rows[] = { REF_ROW, "WWWWWBBBBBBBWWWW" };
+
+        struct bits_t expect;
+
+        NOTE(("test_vertical_mode: VR(1) then two V(0)"));
+
+        bits_init(&expect);
+        put_ref_row(&expect);
+        put_vr1(&expect);
+        put_v0(&expect);
+        put_v0(&expect);
+
+        check_encoding(t, "16x2 VR(1)", rows, 2, 16, 0, &expect);
+}
+
+/*
+ * Pass mode: the reference's black run ends (b2 = 12) before the coding
+ * line's next changing element (a1 = 16), so the run is passed over.
+ */
+static void
+test_pass_mode(struct test_t *t)
+{
+        static const char *const rows[] = { REF_ROW, "WWWWWWWWWWWWWWWW" };
+
+        struct bits_t expect;
+
+        NOTE(("test_pass_mode: white row over a black run passes it"));
+
+        bits_init(&expect);
+        put_ref_row(&expect);
+        put_pass(&expect);
+        put_v0(&expect);
+
+        check_encoding(t, "16x2 Pass", rows, 2, 16, 0, &expect);
+}
+
+/*
+ * Regression for the encoder half of the find_b1 defect (4f49362), the
+ * mirror of test_cfd_g4.c's test_find_b1_changing_element.
+ *
+ * Coding row 1's final V(0) calls find_b1 with a0 = 10 and coding colour
+ * white. ref[11] is black -- the opposite colour -- but it is mid-run: the
+ * black run began at 4, left of a0, so it has no changing element here and
+ * b1 must be 16, not 11.
+ *
+ * With b1 = 11 the encoder computes b2 = 12 < a1 = 16 and emits Pass where
+ * V(0) belongs, so the stream decodes to the wrong image. This case fails
+ * on the old encoder and passes on the fixed one.
+ */
+static void
+test_b1_must_be_changing_element(struct test_t *t)
+{
+        static const char *const rows[] = { REF_ROW, "WWWWBBBBBBWWWWWW" };
+
+        struct bits_t expect;
+
+        NOTE(("test_b1_must_be_changing_element: b1 skips a mid-run pixel"));
+
+        bits_init(&expect);
+        put_ref_row(&expect);
+        put_v0(&expect);
+        put_vl2(&expect);
+        put_v0(&expect);
+
+        check_encoding(t, "16x2 b1 changing element", rows, 2, 16, 0, &expect);
+}
+
+/*
+ * end_of_block appends EOFB and nothing else -- G4 emits no EOL between
+ * rows, so the row coding is byte-for-byte what it was without it.
+ */
+static void
+test_eofb_appended(struct test_t *t)
+{
+        static const char *const rows[] = { "WWWWWWWWWWWWWWWW" };
+
+        struct bits_t expect;
+
+        NOTE(("test_eofb_appended: V(0) then two 12-bit EOL codewords"));
+
+        bits_init(&expect);
+        put_v0(&expect);
+        put_eofb(&expect);
+
+        check_encoding(t, "16x1 with EOFB", rows, 1, 16, 1, &expect);
 }
 
 /* ------------------------------------------------------------------ */
@@ -492,16 +341,18 @@ test_white_image(struct test_t *t)
 int
 main(void)
 {
+        /* static: summarize_test() runs from atexit(), after main's frame
+         * is gone, and g_test still points here. */
         static struct test_t t;
-        make_test(&t, "cfd_g4");
 
-        test_all_white_row(&t);
-        test_all_black_row(&t);
-        test_two_white_rows(&t);
-        test_v0_mode(&t);
-        test_eofb(&t);
-        test_vr1_vl1(&t);
-        test_white_image(&t);
+        make_test(&t, "cfc_g4");
+
+        test_all_white_image(&t);
+        test_horizontal_mode(&t);
+        test_vertical_mode(&t);
+        test_pass_mode(&t);
+        test_b1_must_be_changing_element(&t);
+        test_eofb_appended(&t);
 
         return t.failed ? 1 : 0;
 }
