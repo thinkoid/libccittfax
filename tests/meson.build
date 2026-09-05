@@ -12,6 +12,7 @@ foreach t : [
   'test_skip_to_newline',
   'test_cfd_g4',
   'test_cfc_g4',
+  'test_roundtrip',
 ]
   exe = executable(t,
     files(t + '.c'),

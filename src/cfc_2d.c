@@ -91,22 +91,36 @@ find_a2(const char *coding, int a1, int columns, int black_is_1)
 static int
 find_b1(const char *ref, int a0, int color, int columns, int black_is_1)
 {
-        int pos = (a0 < 0) ? 0 : a0 + 1;
+        int pos, prev;
 
-        if (pos >= columns)
-                return columns;
+        /*
+         * b1 must be a *changing element* -- a pixel differing from its
+         * predecessor -- and not merely the first pixel of the opposite
+         * colour.  The imaginary pixel preceding the line is white.  When
+         * a0 + 1 lands inside an opposite-colour run that began at or before
+         * a0, that run's changing element lies to the left of a0 and the next
+         * one is further right; returning a0 + 1 there makes b1 too small and
+         * mis-tracks a0 for the remainder of the line.
+         *
+         * This mirrors the same correction made in cfd_2d.c (4070383).  While
+         * both sides were wrong the round trip agreed with itself and hid the
+         * defect; only the decoder was fixed then, so an encoder-side b1 that
+         * is too small now yields a stream neither this decoder nor libfaxtiff
+         * reads back correctly.
+         */
+        prev = (a0 < 0) ? 1 : pixel(ref, a0, black_is_1);
 
-        /* If ref[pos] is already opposite color, b1 = pos */
-        if (pixel(ref, pos, black_is_1) != color)
-                return pos;
+        for (pos = (a0 < 0) ? 0 : a0 + 1; pos < columns; ++pos) {
+                int cur = pixel(ref, pos, black_is_1);
 
-        /* Otherwise find the next transition on the reference line */
-        for (++pos; pos < columns; ++pos) {
-                if (pixel(ref, pos, black_is_1) != color)
-                        break;
+                if (cur != prev) {              /* changing element at pos */
+                        if (cur != color)       /* opposite colour -> b1   */
+                                return pos;
+                        prev = cur;
+                }
         }
 
-        return pos;
+        return columns;
 }
 
 /*
